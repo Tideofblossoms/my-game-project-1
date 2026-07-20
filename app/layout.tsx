@@ -16,9 +16,9 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: [{ url: `${base}/og.png`, width: 1536, height: 1024, alt: "《这一生》人生时间线封面" }],
+      images: [{ url: `${base}/og-storybook.png`, width: 1536, height: 1024, alt: "《这一生》卡通人生旅程封面" }],
     },
-    twitter: { card: "summary_large_image", title, description, images: [`${base}/og.png`] },
+    twitter: { card: "summary_large_image", title, description, images: [`${base}/og-storybook.png`] },
   };
 }
 

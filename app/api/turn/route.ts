@@ -75,7 +75,7 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       signal: controller.signal,
       body: JSON.stringify({
-        model: process.env.OPENAI_TEXT_MODEL || "gpt-5.6-terra",
+        model: process.env.OPENAI_TEXT_MODEL || "gpt-5.6-sol",
         reasoning: { effort: "medium" },
         input,
         text: {
