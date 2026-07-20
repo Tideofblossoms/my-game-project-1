@@ -1,24 +1,31 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
+import type { Metadata } from "next";
+import { headers } from "next/headers";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] })
-
-export const metadata: Metadata = {
-  title: "Balloon Popper Game",
-  description: "A fun balloon popping game with multiple difficulty levels",
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("x-forwarded-host") || requestHeaders.get("host") || "localhost:3000";
+  const protocol = requestHeaders.get("x-forwarded-proto") || (host.includes("localhost") ? "http" : "https");
+  const base = `${protocol}://${host}`;
+  const title = "这一生 · AI 人生模拟器";
+  const description = "出生无法选择，但每一次决定都会留下痕迹。一个由 AI 推演结果的现实主义人生模拟器。";
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      images: [{ url: `${base}/og.png`, width: 1536, height: 1024, alt: "《这一生》人生时间线封面" }],
+    },
+    twitter: { card: "summary_large_image", title, description, images: [`${base}/og.png`] },
+  };
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="zh-CN">
+      <body>{children}</body>
     </html>
-  )
+  );
 }
-
