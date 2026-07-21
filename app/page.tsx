@@ -7,6 +7,7 @@ type StatKey = "health" | "happiness" | "ability" | "money" | "relations" | "str
 type Stats = Record<StatKey, number>;
 type Screen = "splash" | "name" | "identity" | "game" | "end";
 type PersonaId = "dreamer" | "connector" | "strategist" | "free-spirit";
+type Language = "zh" | "en" | "es";
 
 type AccountInfo = {
   authenticated: boolean;
@@ -14,7 +15,7 @@ type AccountInfo = {
   displayName: string;
 };
 
-type MediaCapabilities = { image: boolean; video: boolean };
+type MediaCapabilities = { image: boolean };
 
 type SavePayload = {
   version: 1;
@@ -30,7 +31,7 @@ type SavePayload = {
   history: HistoryItem[];
   plannedEvents?: PlannedLifeEvent[];
   turnNumber?: number;
-  videoJobs?: Record<string, PreloadedVideoJob>;
+  language?: Language;
 };
 
 type Choice = {
@@ -52,15 +53,7 @@ type LifeEvent = {
 
 type PlannedLifeEvent = LifeEvent & {
   id: string;
-  videoPrompt: string;
   origin: "ai" | "fallback";
-};
-
-type PreloadedVideoJob = {
-  eventId: string;
-  apiId: string;
-  status: "queued" | "in_progress" | "completed" | "failed";
-  progress: number;
 };
 
 type HistoryItem = {
@@ -68,6 +61,74 @@ type HistoryItem = {
   title: string;
   choice: string;
   narrative: string;
+};
+
+const languageNames: Record<Language, string> = { zh: "中文", en: "English", es: "Español" };
+
+const uiCopy = {
+  zh: {
+    brand: "这一生", accountLoading: "正在读取账号", heroKicker: "✦ AI 人生故事游戏", heroTitle: "这一生", heroAccent: "会走向哪里？",
+    heroLead: "取一个名字，选一副性格底牌。每一次决定都会改变故事、数值和下一幕的风景。", start: "开始新人生", continue: "继续", turns: "个转折",
+    features: ["🎨 自定义人生", "🧠 AI 创造每个事件", "🎬 生动的记忆转场"], prophecy: "今日预言", prophecyLine: "你会遇见\n意料之外的自己", prophecyNote: "没有最优解，只有被你走出来的路。",
+    localPreview: "本地试玩模式", accountConnected: "ChatGPT 账号已连接", signInHint: "登录后可跨设备保存", signOut: "退出账号", signIn: "用 ChatGPT 登录",
+    back: "返回", previous: "上一步", nameKicker: "先从名字开始", nameTitle: "这一生，你想叫什么？", nameHelp: "这是会出现在故事、回忆和人生结局里的名字。", namePlaceholder: "输入你的名字", randomName: "让命运替我取名", hello: "你好，",
+    buildKicker: "建立你的起点", buildTitle: "选择你的人生底牌", buildLead: "先选一个人设作为起点，再亲手微调。所有人都拥有同样的点数，没有完美开局。", birthplace: "出生背景", birthplaceHelp: "影响地点与特有事件", persona: "身份人设", personaHelp: "选择后仍可继续微调", adjust: "调整起点数值", adjustHelp: "压力越低，占用点数越大", perfect: "刚刚好", remaining: "还剩", over: "超出", portrait: "你的起点画像", beginLife: "开始这一生", needAllocate: "还需分配", reduce: "请减少", points: "点",
+    directorKicker: "AI 人生导演", directorTitle: "命运正在写下\n你看不见的后两步", directorLead: "当前事件会先公开，未来保持隐藏；重要场景会提前在后台准备。",
+    remembered: "一生回望", lived: "走过", years: "年", choicesMade: "重要选择", times: "次", finalMood: "最后心境", peaceful: "安宁", complex: "复杂", lingering: "仍有牵挂", clearest: "最清晰的记忆", liveAgain: "再活一次",
+    directing: "正在续写未来", planned: "已秘密规划后两步", liveDirector: "AI 实时导演", saving: "正在保存", saved: "云端已保存", localPlay: "本地试玩", noSave: "未连接存档", ageUnit: "岁", yourLife: "你的这一生", bornIn: "年生于", walked: "已经走过", chapter: "章", aiGenerated: "AI 现场生成", fallbackStory: "备用剧情",
+    thinking: "人生导演正在推演", thinkingDetail: "读取过去的选择 · 衡量现实条件 · 寻找可能的结果", aiTurn: "AI 实时推演", localTurn: "本地导演模式", choose: "你会怎么选择？", continueForward: "继续向前",
+    rendering: "正在把这一刻绘成记忆…", aiPainting: "AI 正在绘制这一幕", localPainting: "即时故事画面", replayMotion: "播放动态画面", pauseMotion: "暂停动态画面", regenerate: "重新生成 AI 插画",
+  },
+  en: {
+    brand: "One Life", accountLoading: "Loading account", heroKicker: "✦ AI LIFE STORY GAME", heroTitle: "Where will", heroAccent: "this life lead?",
+    heroLead: "Choose a name and a personality. Every decision reshapes the story, your stats, and the view beyond the next turn.", start: "Begin a new life", continue: "Continue", turns: "turns",
+    features: ["🎨 Shape your character", "🧠 AI-created life events", "🎬 Vivid memory transitions"], prophecy: "TODAY'S PROPHECY", prophecyLine: "You will meet\na self you never expected", prophecyNote: "There is no perfect answer—only the road you make.",
+    localPreview: "Local preview", accountConnected: "ChatGPT account connected", signInHint: "Sign in to save across devices", signOut: "Sign out", signIn: "Sign in with ChatGPT",
+    back: "Back", previous: "Previous", nameKicker: "FIRST THINGS FIRST", nameTitle: "What will you be called in this life?", nameHelp: "This name will live in your story, memories, and ending.", namePlaceholder: "Enter your name", randomName: "Let fate choose my name", hello: "Hello, ",
+    buildKicker: "BUILD YOUR BEGINNING", buildTitle: "Choose your starting hand", buildLead: "Pick a persona, then tune it yourself. Everyone gets the same points; no beginning is perfect.", birthplace: "Birthplace", birthplaceHelp: "Shapes locations and unique events", persona: "Persona", personaHelp: "You can fine-tune it next", adjust: "Starting stats", adjustHelp: "Lower stress costs more points", perfect: "Ready", remaining: "Left", over: "Over", portrait: "Your starting portrait", beginLife: "Begin this life", needAllocate: "Allocate", reduce: "Reduce", points: "points",
+    directorKicker: "AI LIFE DIRECTOR", directorTitle: "Fate is writing\nthe next two unseen steps", directorLead: "The present is revealed first. Future events stay hidden, while major scenes prepare in the background.",
+    remembered: "A LIFE, REMEMBERED", lived: "Years lived", years: "years", choicesMade: "Major choices", times: "", finalMood: "Final state", peaceful: "At peace", complex: "Complex", lingering: "Still holding on", clearest: "Clearest memory", liveAgain: "Live again",
+    directing: "Writing the future", planned: "Two steps planned in secret", liveDirector: "AI live director", saving: "Saving", saved: "Saved to cloud", localPlay: "Local play", noSave: "Save not connected", ageUnit: "", yourLife: "Your life", bornIn: "born in", walked: "Turns lived", chapter: "Chapter", aiGenerated: "AI generated", fallbackStory: "Offline story",
+    thinking: "The life director is imagining the outcome", thinkingDetail: "Reading past choices · Weighing reality · Finding a believable result", aiTurn: "AI live outcome", localTurn: "Local story mode", choose: "What will you do?", continueForward: "Continue onward",
+    rendering: "Turning this moment into a memory…", aiPainting: "AI is painting this scene", localPainting: "Instant story scene", replayMotion: "Play camera motion", pauseMotion: "Pause camera motion", regenerate: "Regenerate AI art",
+  },
+  es: {
+    brand: "Una vida", accountLoading: "Cargando cuenta", heroKicker: "✦ HISTORIA DE VIDA CON IA", heroTitle: "¿Adónde te llevará", heroAccent: "esta vida?",
+    heroLead: "Elige un nombre y una personalidad. Cada decisión cambia la historia, tus atributos y el paisaje del próximo giro.", start: "Empezar una nueva vida", continue: "Continuar", turns: "giros",
+    features: ["🎨 Crea tu personaje", "🧠 Sucesos creados por IA", "🎬 Transiciones de recuerdos"], prophecy: "PREDICCIÓN DE HOY", prophecyLine: "Conocerás a un yo\nque nunca imaginaste", prophecyNote: "No existe la respuesta perfecta, solo el camino que construyes.",
+    localPreview: "Prueba local", accountConnected: "Cuenta de ChatGPT conectada", signInHint: "Inicia sesión para guardar", signOut: "Cerrar sesión", signIn: "Entrar con ChatGPT",
+    back: "Volver", previous: "Anterior", nameKicker: "EMPECEMOS POR AQUÍ", nameTitle: "¿Cómo te llamarás en esta vida?", nameHelp: "Este nombre aparecerá en tu historia, recuerdos y desenlace.", namePlaceholder: "Escribe tu nombre", randomName: "Que el destino elija", hello: "Hola, ",
+    buildKicker: "CONSTRUYE TU COMIENZO", buildTitle: "Elige tus cartas iniciales", buildLead: "Elige una personalidad y ajústala. Todos tienen los mismos puntos; ningún comienzo es perfecto.", birthplace: "Lugar de origen", birthplaceHelp: "Define lugares y sucesos únicos", persona: "Personalidad", personaHelp: "Después podrás ajustarla", adjust: "Atributos iniciales", adjustHelp: "Menos estrés cuesta más puntos", perfect: "Listo", remaining: "Quedan", over: "Exceso", portrait: "Tu retrato inicial", beginLife: "Empezar esta vida", needAllocate: "Asigna", reduce: "Reduce", points: "puntos",
+    directorKicker: "DIRECTOR DE VIDA IA", directorTitle: "El destino escribe\nlos próximos dos pasos", directorLead: "El presente se revela primero. El futuro queda oculto y las escenas importantes se preparan detrás del telón.",
+    remembered: "UNA VIDA RECORDADA", lived: "Años vividos", years: "años", choicesMade: "Decisiones", times: "", finalMood: "Ánimo final", peaceful: "En paz", complex: "Complejo", lingering: "Con asuntos pendientes", clearest: "Recuerdo más claro", liveAgain: "Vivir de nuevo",
+    directing: "Escribiendo el futuro", planned: "Dos pasos planeados", liveDirector: "Director IA en vivo", saving: "Guardando", saved: "Guardado en la nube", localPlay: "Partida local", noSave: "Guardado desconectado", ageUnit: "años", yourLife: "Tu vida", bornIn: "nació en", walked: "Giros vividos", chapter: "Capítulo", aiGenerated: "Generado por IA", fallbackStory: "Historia local",
+    thinking: "El director imagina el resultado", thinkingDetail: "Leyendo decisiones · Sopesando la realidad · Buscando un resultado creíble", aiTurn: "Resultado de IA", localTurn: "Modo de historia local", choose: "¿Qué harás?", continueForward: "Seguir adelante",
+    rendering: "Convirtiendo este momento en un recuerdo…", aiPainting: "La IA está pintando esta escena", localPainting: "Escena instantánea", replayMotion: "Mover la cámara", pauseMotion: "Pausar movimiento", regenerate: "Regenerar ilustración",
+  },
+} as const;
+
+const countryCopy: Record<Language, Record<Country, { name: string; subtitle: string }>> = {
+  zh: { cn: { name: "中国", subtitle: "家庭、流动与选择" }, us: { name: "美国", subtitle: "独立、机会与代价" }, jp: { name: "日本", subtitle: "秩序、归属与自我" } },
+  en: { cn: { name: "China", subtitle: "Family, movement, and choice" }, us: { name: "United States", subtitle: "Independence, opportunity, and cost" }, jp: { name: "Japan", subtitle: "Order, belonging, and self" } },
+  es: { cn: { name: "China", subtitle: "Familia, cambio y elección" }, us: { name: "Estados Unidos", subtitle: "Independencia, oportunidad y coste" }, jp: { name: "Japón", subtitle: "Orden, pertenencia e identidad" } },
+};
+
+const personaCopy: Record<Language, Record<PersonaId, { name: string; tagline: string }>> = {
+  zh: { dreamer: { name: "浪漫梦想家", tagline: "相信直觉，也愿意为喜欢的事绕远路" }, connector: { name: "温柔连接者", tagline: "擅长照顾关系，在人群中寻找归属" }, strategist: { name: "清醒策略家", tagline: "喜欢提前准备，让机会变成可执行的计划" }, "free-spirit": { name: "自在行动派", tagline: "精力旺盛，跌倒以后会先笑再站起来" } },
+  en: { dreamer: { name: "Romantic Dreamer", tagline: "Trusts intuition and takes the scenic route" }, connector: { name: "Gentle Connector", tagline: "Nurtures relationships and finds belonging" }, strategist: { name: "Clear-eyed Strategist", tagline: "Turns opportunities into practical plans" }, "free-spirit": { name: "Free Spirit", tagline: "Energetic, resilient, and ready to move" } },
+  es: { dreamer: { name: "Soñador romántico", tagline: "Confía en la intuición y acepta los desvíos" }, connector: { name: "Conector amable", tagline: "Cuida los vínculos y busca pertenencia" }, strategist: { name: "Estratega lúcido", tagline: "Convierte oportunidades en planes" }, "free-spirit": { name: "Espíritu libre", tagline: "Enérgico, resiliente y siempre en marcha" } },
+};
+
+const statCopy: Record<Language, Record<StatKey, { label: string; description: string }>> = {
+  zh: {
+    health: { label: "健康", description: "体力、恢复速度与长期身体底子" }, happiness: { label: "心境", description: "感受快乐、消化失落与重新振作的能力" }, ability: { label: "能力", description: "学习、判断、表达和解决问题的基础" }, money: { label: "资源", description: "金钱、时间与选择空间" }, relations: { label: "关系", description: "家人、朋友与支持网络的强度" }, stress: { label: "压力", description: "对风险与变化的敏感度；越低越从容" },
+  },
+  en: {
+    health: { label: "Health", description: "Energy, recovery, and long-term wellbeing" }, happiness: { label: "Mood", description: "Joy, resilience, and emotional recovery" }, ability: { label: "Ability", description: "Learning, judgment, expression, and problem solving" }, money: { label: "Resources", description: "Money, time, and room to choose" }, relations: { label: "Relations", description: "Strength of family, friends, and support" }, stress: { label: "Stress", description: "Sensitivity to risk and change; lower is calmer" },
+  },
+  es: {
+    health: { label: "Salud", description: "Energía, recuperación y bienestar a largo plazo" }, happiness: { label: "Ánimo", description: "Alegría, resiliencia y recuperación emocional" }, ability: { label: "Capacidad", description: "Aprendizaje, juicio, expresión y resolución" }, money: { label: "Recursos", description: "Dinero, tiempo y margen para elegir" }, relations: { label: "Relaciones", description: "Fuerza de la familia, amistades y apoyo" }, stress: { label: "Estrés", description: "Sensibilidad al riesgo; menos es más calma" },
+  },
 };
 
 const countries: Record<Country, { name: string; subtitle: string; glyph: string; places: string[] }> = {
@@ -379,7 +440,7 @@ function startingPointCost(stats: Stats) {
   return positiveStatKeys.reduce((total, key) => total + stats[key], 0) + (100 - stats.stress);
 }
 
-function describeStartingProfile(stats: Stats) {
+function describeStartingProfile(stats: Stats, language: Language = "zh") {
   const ranked = [...positiveStatKeys].sort((a, b) => stats[b] - stats[a]);
   const strongest = ranked[0];
   const weakest = ranked[ranked.length - 1];
@@ -404,6 +465,18 @@ function describeStartingProfile(stats: Stats) {
         ? "资源和支持都不充足，许多选择从一开始就需要自己承担后果。"
         : "现实资源与人际支持相对均衡，不会替你决定人生，却能提供缓冲。";
 
+  if (language !== "zh") {
+    const labels = statCopy[language];
+    return {
+      title: language === "en" ? "An imperfect, believable beginning" : "Un comienzo imperfecto y real",
+      description: language === "en"
+        ? `Your strongest foundation is ${labels[strongest].label}; your most fragile is ${labels[weakest].label}. Every advantage creates room to move, while every limit gives future choices their weight.`
+        : `Tu base más fuerte es ${labels[strongest].label}; la más frágil es ${labels[weakest].label}. Cada ventaja abre posibilidades y cada límite da peso a tus decisiones.`,
+      signals: language === "en"
+        ? [`Strength · ${labels[strongest].label} ${stats[strongest]}`, `Watch · ${labels[weakest].label} ${stats[weakest]}`, `Baseline stress · ${stats.stress}`]
+        : [`Fortaleza · ${labels[strongest].label} ${stats[strongest]}`, `Atención · ${labels[weakest].label} ${stats[weakest]}`, `Estrés inicial · ${stats.stress}`],
+    };
+  }
   return {
     title,
     description: `你的突出优势是${statMeta[strongest].label}，相对薄弱的是${statMeta[weakest].label}。${stressSentence}${supportSentence}`,
@@ -472,18 +545,142 @@ function wrapCanvasText(context: CanvasRenderingContext2D, text: string, maxWidt
   return lines;
 }
 
+type CharacterPose = "active" | "observe" | "decline" | "support";
+
+function drawStorybookCharacter(
+  context: CanvasRenderingContext2D,
+  x: number,
+  groundY: number,
+  scale: number,
+  coat: string,
+  progress: number,
+  facing = 1,
+  age = 24,
+  pose: CharacterPose = "observe",
+) {
+  const isChild = age < 13;
+  const isOlder = age > 62;
+  const skin = "#efb38f";
+  const skinShadow = "#cf896f";
+  const hair = isOlder ? "#756b78" : "#382c42";
+  const headY = isChild ? -157 : -191;
+  const headRadiusX = isChild ? 31 : 28;
+  const headRadiusY = isChild ? 34 : 32;
+  const shoulderY = isChild ? -119 : -148;
+  const hipY = isChild ? -63 : -72;
+  const shoulderWidth = isChild ? 27 : 35;
+  const footSpread = isChild ? 17 : 22;
+  const breathing = Math.sin(progress * Math.PI * 2) * 1.5;
+  const frontHand = pose === "active" ? { x: 55, y: shoulderY + 34 }
+    : pose === "observe" ? { x: 24, y: headY + 22 }
+      : pose === "decline" ? { x: 34, y: shoulderY + 54 }
+        : { x: 25, y: shoulderY + 48 };
+  const backHand = pose === "active" ? { x: -36, y: shoulderY + 48 }
+    : pose === "observe" ? { x: -22, y: shoulderY + 55 }
+      : pose === "decline" ? { x: -43, y: shoulderY + 37 }
+        : { x: -24, y: shoulderY + 50 };
+
+  context.save();
+  context.translate(x, groundY + Math.sin(progress * Math.PI * 6) * 1.4);
+  context.scale(scale * facing, scale);
+
+  // A soft painted grounding shadow keeps the figure from floating.
+  context.fillStyle = "rgba(36,26,55,.22)";
+  context.beginPath(); context.ellipse(0, 7, isChild ? 29 : 36, 8, 0, 0, Math.PI * 2); context.fill();
+
+  // Legs and shoes are measured from the same hip/ground landmarks.
+  context.fillStyle = "#2f2940";
+  context.beginPath();
+  context.roundRect(-footSpread, hipY, isChild ? 12 : 15, -hipY + 1, 7);
+  context.roundRect(footSpread - (isChild ? 12 : 15), hipY, isChild ? 12 : 15, -hipY + 1, 7);
+  context.fill();
+  context.fillStyle = "#282335";
+  context.beginPath();
+  context.roundRect(-footSpread - 9, -5, isChild ? 24 : 29, 10, 6);
+  context.roundRect(footSpread - 10, -5, isChild ? 24 : 30, 10, 6);
+  context.fill();
+
+  // Torso uses age-aware shoulder/hip proportions instead of a fixed block.
+  context.fillStyle = coat;
+  context.beginPath();
+  context.moveTo(-shoulderWidth, shoulderY + breathing);
+  context.quadraticCurveTo(0, shoulderY - 12 + breathing, shoulderWidth, shoulderY + breathing);
+  context.lineTo(shoulderWidth - 8, hipY);
+  context.quadraticCurveTo(0, hipY + 13, -shoulderWidth + 8, hipY);
+  context.closePath(); context.fill();
+
+  // Sleeves and hands share explicit joint endpoints, so hands stay attached.
+  context.strokeStyle = coat; context.lineWidth = isChild ? 15 : 18; context.lineCap = "round"; context.lineJoin = "round";
+  context.beginPath();
+  context.moveTo(-shoulderWidth + 4, shoulderY + 7);
+  context.quadraticCurveTo(-shoulderWidth - 10, shoulderY + 28, backHand.x, backHand.y);
+  context.moveTo(shoulderWidth - 4, shoulderY + 7);
+  context.quadraticCurveTo(shoulderWidth + 12, shoulderY + 26, frontHand.x, frontHand.y);
+  context.stroke();
+  context.fillStyle = skin;
+  for (const hand of [backHand, frontHand]) { context.beginPath(); context.ellipse(hand.x, hand.y, 7, 8, 0, 0, Math.PI * 2); context.fill(); }
+
+  // Neck, ears and face are all anchored to the same head ellipse.
+  context.fillStyle = skinShadow;
+  context.beginPath(); context.roundRect(-9, headY + 24, 18, 24, 7); context.fill();
+  context.fillStyle = skin;
+  context.beginPath(); context.ellipse(0, headY, headRadiusX, headRadiusY, 0, 0, Math.PI * 2); context.fill();
+  context.beginPath(); context.ellipse(headRadiusX - 2, headY + 3, 6, 8, 0, 0, Math.PI * 2); context.fill();
+
+  // Clip the hair to the head silhouette: the hairline cannot drift off the face.
+  context.save();
+  context.beginPath(); context.ellipse(0, headY, headRadiusX, headRadiusY, 0, 0, Math.PI * 2); context.clip();
+  context.fillStyle = hair;
+  context.beginPath();
+  context.ellipse(-3, headY - 18, headRadiusX + 5, headRadiusY * .72, -.08, 0, Math.PI * 2);
+  context.fill();
+  context.beginPath();
+  context.moveTo(-headRadiusX - 2, headY - 6);
+  context.quadraticCurveTo(-12, headY - 2, -4, headY + 2);
+  context.quadraticCurveTo(8, headY - 8, headRadiusX + 3, headY - 1);
+  context.lineTo(headRadiusX + 3, headY - headRadiusY - 4);
+  context.lineTo(-headRadiusX - 3, headY - headRadiusY - 4);
+  context.closePath(); context.fill();
+  context.restore();
+
+  // Eyes, brow, nose and mouth remain inside the face for either facing direction.
+  context.strokeStyle = "rgba(74,49,61,.84)"; context.lineWidth = 2.2; context.lineCap = "round";
+  context.beginPath(); context.moveTo(4, headY - 5); context.quadraticCurveTo(10, headY - 8, 16, headY - 5); context.stroke();
+  context.fillStyle = "#4a313d";
+  context.beginPath(); context.ellipse(11, headY + 1, 2.6, 3.2, 0, 0, Math.PI * 2); context.fill();
+  context.strokeStyle = "rgba(156,91,76,.7)"; context.lineWidth = 1.8;
+  context.beginPath(); context.moveTo(18, headY + 5); context.quadraticCurveTo(22, headY + 9, 17, headY + 11); context.stroke();
+  context.strokeStyle = "rgba(113,58,64,.7)"; context.lineWidth = 2;
+  context.beginPath();
+  if (pose === "active") context.arc(10, headY + 13, 8, .15, 1.25);
+  else if (pose === "decline") context.arc(10, headY + 20, 7, 3.95, 5.3);
+  else context.arc(10, headY + 12, 7, .35, 1.15);
+  context.stroke();
+
+  // Scarf/collar visually connects the head and torso.
+  context.fillStyle = "#ffcf70";
+  context.beginPath(); context.roundRect(-shoulderWidth + 5, shoulderY - 7, shoulderWidth * 2 - 10, 10, 5); context.fill();
+  context.restore();
+}
+
 function drawStoryFrame(canvas: HTMLCanvasElement, event: LifeEvent, profile: ReturnType<typeof makeProfile>, narrative: string, progress = 0) {
   const context = canvas.getContext("2d");
   if (!context) return;
   const width = canvas.width;
   const height = canvas.height;
+  const sceneKey = `${event.scene}|${event.title}|${narrative}|${profile.name}`;
+  const seed = [...sceneKey].reduce((value, character) => ((value * 31) + character.charCodeAt(0)) >>> 0, 2166136261);
+  const variant = seed % 5;
+  const selectedChoice = narrative.split("|")[0];
+  const choiceIndex = Math.max(0, event.choices.findIndex((choice) => choice.text === selectedChoice));
+  const mainPose: CharacterPose = choiceIndex === 0 ? "active" : choiceIndex === 1 ? "observe" : "decline";
   const [skyA, skyB, ground, glow] = scenePalettes[event.scene] || scenePalettes.childhood;
   const gradient = context.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, skyA); gradient.addColorStop(.58, skyB); gradient.addColorStop(1, ground);
   context.fillStyle = gradient; context.fillRect(0, 0, width, height);
 
-  const sunX = width * (.74 + Math.sin(progress * Math.PI * 2) * .025);
-  const sunY = height * (.22 - Math.sin(progress * Math.PI) * .03);
+  const sunX = width * (.2 + (variant * .15) + Math.sin(progress * Math.PI * 2) * .025);
+  const sunY = height * (.16 + (variant % 2) * .08 - Math.sin(progress * Math.PI) * .03);
   context.beginPath(); context.arc(sunX, sunY, 78, 0, Math.PI * 2); context.fillStyle = glow; context.fill();
   context.globalAlpha = .22; context.beginPath(); context.arc(sunX, sunY, 118, 0, Math.PI * 2); context.fill(); context.globalAlpha = 1;
 
@@ -497,59 +694,80 @@ function drawStoryFrame(canvas: HTMLCanvasElement, event: LifeEvent, profile: Re
   context.fillStyle = ground; context.beginPath(); context.moveTo(0, height * .62); context.quadraticCurveTo(width * .24, height * .46, width * .48, height * .65); context.quadraticCurveTo(width * .72, height * .84, width, height * .56); context.lineTo(width, height); context.lineTo(0, height); context.fill();
   context.fillStyle = "rgba(255,255,255,.16)"; context.beginPath(); context.moveTo(width * .52, height); context.quadraticCurveTo(width * (.55 + progress * .03), height * .73, width * .62, height * .59); context.lineWidth = 90; context.strokeStyle = "rgba(255,235,190,.75)"; context.stroke();
 
-  const figureX = width * (.51 + progress * .06);
-  const figureY = height * .69 - Math.sin(progress * Math.PI * 6) * 3;
-  context.fillStyle = "#3c3158"; context.beginPath(); context.arc(figureX, figureY - 62, 22, 0, Math.PI * 2); context.fill();
-  context.beginPath(); context.roundRect(figureX - 19, figureY - 42, 38, 68, 17); context.fill();
-  context.lineWidth = 9; context.lineCap = "round"; context.strokeStyle = "#3c3158";
-  context.beginPath(); context.moveTo(figureX - 8, figureY + 18); context.lineTo(figureX - 18, figureY + 54); context.moveTo(figureX + 8, figureY + 18); context.lineTo(figureX + 21, figureY + 52); context.stroke();
+  context.save();
+  context.translate(progress * -22, 0);
+  if (["city", "station", "departure"].includes(event.scene)) {
+    context.fillStyle = "rgba(48,45,78,.34)";
+    [70, 180, 285, 990, 1080, 1190].forEach((x, index) => { const buildingHeight = 95 + (index % 3) * 55; context.fillRect(x, height * .62 - buildingHeight, 82, buildingHeight); });
+    context.fillStyle = "rgba(255,225,135,.72)";
+    for (let x = 84; x < 1240; x += 42) for (let y = 310; y < 430; y += 34) context.fillRect(x, y, 8, 12);
+    if (["station", "departure"].includes(event.scene)) {
+      context.strokeStyle = "rgba(245,238,221,.76)"; context.lineWidth = 9;
+      context.beginPath(); context.moveTo(0, 438); context.lineTo(width, 438); context.moveTo(0, 474); context.lineTo(width, 474); context.stroke();
+    }
+  } else if (["home", "childhood", "school"].includes(event.scene)) {
+    context.fillStyle = "rgba(255,244,219,.62)"; context.fillRect(74, 270, 290, 212);
+    context.fillStyle = "rgba(101,74,104,.55)"; context.beginPath(); context.moveTo(42, 286); context.lineTo(220, 166); context.lineTo(394, 286); context.closePath(); context.fill();
+    context.fillStyle = "rgba(120,84,102,.72)"; context.fillRect(194, 367, 58, 115);
+    context.fillStyle = "rgba(255,207,112,.76)"; context.fillRect(105, 330, 54, 48); context.fillRect(286, 330, 52, 48);
+    context.fillStyle = "rgba(72,118,93,.55)";
+    for (let x = 930; x < 1260; x += 75) { context.beginPath(); context.arc(x, 384 - (x % 3) * 12, 54, 0, Math.PI * 2); context.fill(); }
+  } else {
+    context.fillStyle = "rgba(64,83,83,.42)";
+    for (let x = 60; x < width; x += 110) { context.beginPath(); context.moveTo(x, 455); context.lineTo(x + 42, 310 - (x % 4) * 18); context.lineTo(x + 88, 455); context.closePath(); context.fill(); }
+  }
+  context.restore();
 
-  const overlay = context.createLinearGradient(0, height * .56, 0, height);
-  overlay.addColorStop(0, "rgba(34,28,57,0)"); overlay.addColorStop(1, "rgba(34,28,57,.78)"); context.fillStyle = overlay; context.fillRect(0, height * .45, width, height * .55);
-  context.fillStyle = "rgba(255,255,255,.9)"; context.font = "800 22px system-ui, sans-serif"; context.fillText(`${event.chapter} · ${event.age} 岁 · ${profile.name}`, 52, height - 156);
-  context.fillStyle = "#fff"; context.font = "900 42px system-ui, sans-serif"; context.fillText(event.title, 52, height - 105);
-  context.font = "500 19px system-ui, sans-serif";
-  wrapCanvasText(context, narrative, width - 104, 2).forEach((line, index) => context.fillText(line, 52, height - 65 + index * 26));
+  const figureX = width * (.38 + variant * .07 + progress * .035);
+  const figureY = height * .79;
+  const coats = ["#624f91", "#355f79", "#a95762", "#476b55", "#7b594a"];
+  const ageScale = event.age < 13 ? .62 : event.age > 62 ? .69 : .74;
+  drawStorybookCharacter(context, figureX, figureY, ageScale, coats[variant], progress, variant % 2 ? -1 : 1, event.age, mainPose);
+  if (["home", "school", "childhood"].includes(event.scene) || variant === 3) {
+    const companionAge = event.age < 16 ? 34 : Math.min(78, event.age + 3);
+    drawStorybookCharacter(context, figureX - 142, figureY + 16, event.age < 16 ? .72 : .62, coats[(variant + 2) % coats.length], progress + .2, -1, companionAge, "support");
+  }
+
+  context.save();
+  context.globalAlpha = .88;
+  context.fillStyle = choiceIndex === 0 ? "#d96d73" : choiceIndex === 1 ? "#f0b55b" : "#8b7ab5";
+  if (choiceIndex === 0) {
+    context.translate(width * .76, height * .66); context.rotate(-.12);
+    context.fillRect(-48, -31, 96, 62); context.strokeStyle = "#fff0cf"; context.lineWidth = 4; context.strokeRect(-39, -23, 78, 46);
+    context.beginPath(); context.moveTo(-39, -23); context.lineTo(0, 5); context.lineTo(39, -23); context.stroke();
+  } else if (choiceIndex === 1) {
+    context.beginPath(); context.arc(width * .77, height * .68, 27, 0, Math.PI * 2); context.fill();
+    context.strokeStyle = "rgba(255,255,255,.85)"; context.lineWidth = 4; context.stroke();
+    context.beginPath(); context.moveTo(width * .77, height * .68); context.lineTo(width * .77, height * .655); context.moveTo(width * .77, height * .68); context.lineTo(width * .788, height * .688); context.stroke();
+  } else {
+    context.fillRect(width * .18, height * .7, 62, 42); context.strokeStyle = "#f4e5c4"; context.lineWidth = 5; context.strokeRect(width * .18, height * .7, 62, 42);
+    context.beginPath(); context.moveTo(width * .18, height * .7); context.lineTo(width * .212, height * .723); context.lineTo(width * .245, height * .7); context.stroke();
+  }
+  context.restore();
+
+  context.fillStyle = "rgba(255,255,255,.72)";
+  for (let index = 0; index < 22; index += 1) {
+    const x = (index * 97 + progress * 160) % width;
+    const y = 80 + ((index * 71) % 410);
+    context.beginPath(); context.arc(x, y, 1.5 + (index % 3), 0, Math.PI * 2); context.fill();
+  }
+
+  const overlay = context.createLinearGradient(0, height * .62, 0, height);
+  overlay.addColorStop(0, "rgba(34,28,57,0)"); overlay.addColorStop(1, "rgba(34,28,57,.3)"); context.fillStyle = overlay; context.fillRect(0, height * .56, width, height * .44);
 }
 
 async function createLocalSceneImage(event: LifeEvent, profile: ReturnType<typeof makeProfile>, narrative: string) {
-  const canvas = document.createElement("canvas"); canvas.width = 1280; canvas.height = 720;
+  const canvas = document.createElement("canvas"); canvas.width = 960; canvas.height = 1200;
   drawStoryFrame(canvas, event, profile, narrative, .35);
   return canvas.toDataURL("image/png", .94);
 }
 
-async function createLocalStoryVideo(event: LifeEvent, profile: ReturnType<typeof makeProfile>, narrative: string, onProgress?: (value: number) => void) {
-  const canvas = document.createElement("canvas"); canvas.width = 1280; canvas.height = 720;
-  if (!("captureStream" in canvas) || typeof MediaRecorder === "undefined") throw new Error("当前浏览器不支持本地视频录制");
-  const stream = canvas.captureStream(30);
-  const mimeType = ["video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"].find((type) => MediaRecorder.isTypeSupported(type)) || "";
-  const recorder = new MediaRecorder(stream, mimeType ? { mimeType, videoBitsPerSecond: 4_000_000 } : undefined);
-  const chunks: Blob[] = [];
-  recorder.ondataavailable = (eventData) => { if (eventData.data.size) chunks.push(eventData.data); };
-  const finished = new Promise<string>((resolve, reject) => {
-    recorder.onerror = () => reject(new Error("视频录制失败"));
-    recorder.onstop = () => {
-      stream.getTracks().forEach((track) => track.stop());
-      resolve(URL.createObjectURL(new Blob(chunks, { type: recorder.mimeType || "video/webm" })));
-    };
-  });
-  recorder.start(250);
-  const duration = 5200;
-  const startedAt = performance.now();
-  await new Promise<void>((resolve) => {
-    const render = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / duration);
-      onProgress?.(progress * 100);
-      drawStoryFrame(canvas, event, profile, narrative, progress);
-      if (progress < 1) requestAnimationFrame(render); else resolve();
-    };
-    requestAnimationFrame(render);
-  });
-  recorder.stop();
-  return finished;
-}
-
 export default function Home() {
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window === "undefined") return "zh";
+    const saved = window.localStorage.getItem("one-life-language");
+    return saved === "en" || saved === "es" ? saved : "zh";
+  });
   const [screen, setScreen] = useState<Screen>("splash");
   const [country, setCountry] = useState<Country>("cn");
   const [personaId, setPersonaId] = useState<PersonaId>("dreamer");
@@ -561,21 +779,17 @@ export default function Home() {
   const [turnNumber, setTurnNumber] = useState(0);
   const [plannedEvents, setPlannedEvents] = useState<PlannedLifeEvent[]>([]);
   const [directorLoading, setDirectorLoading] = useState(false);
-  const [videoJobs, setVideoJobs] = useState<Record<string, PreloadedVideoJob>>({});
-  const preloadStartedRef = useRef(new Set<string>());
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [result, setResult] = useState<{ title: string; narrative: string; effects: Partial<Stats>; live: boolean } | null>(null);
+  const [result, setResult] = useState<{ title: string; narrative: string; effects: Partial<Stats>; live: boolean; illustrationPrompt?: string } | null>(null);
   const [pendingChoice, setPendingChoice] = useState("");
   const [thinking, setThinking] = useState(false);
   const [artUrl, setArtUrl] = useState<string | null>(null);
   const [artLoading, setArtLoading] = useState(false);
+  const artRequestRef = useRef(0);
+  const languageChangedDuringResultRef = useRef(false);
   const [cgPlaying, setCgPlaying] = useState(false);
-  const [videoId, setVideoId] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [videoStatus, setVideoStatus] = useState<"idle" | "queued" | "in_progress" | "completed" | "failed">("idle");
-  const [videoProgress, setVideoProgress] = useState(0);
   const [account, setAccount] = useState<AccountInfo | null>(null);
-  const [mediaCapabilities, setMediaCapabilities] = useState<MediaCapabilities>({ image: false, video: false });
+  const [mediaCapabilities, setMediaCapabilities] = useState<MediaCapabilities>({ image: false });
   const [mediaNotice, setMediaNotice] = useState("");
   const [cloudSave, setCloudSave] = useState<SavePayload | null>(null);
   const [saveState, setSaveState] = useState<"loading" | "saved" | "saving" | "offline" | "error">("loading");
@@ -583,7 +797,33 @@ export default function Home() {
   const fallbackEvents = useMemo(() => [...sharedEvents, ...extraLifeEvents, countryEvent[country]].sort((a, b) => a.age - b.age), [country]);
   const currentEvent: LifeEvent = plannedEvents[0] || fallbackEvents[Math.min(eventIndex, fallbackEvents.length - 1)];
   const startingPointsRemaining = STARTING_POINT_BUDGET - startingPointCost(startingStats);
-  const startingPortrait = useMemo(() => describeStartingProfile(startingStats), [startingStats]);
+  const startingPortrait = useMemo(() => describeStartingProfile(startingStats, language), [startingStats, language]);
+  const copy = uiCopy[language];
+  const displayedStats = useMemo(() => Object.fromEntries((Object.keys(statMeta) as StatKey[]).map((key) => [key, { ...statMeta[key], ...statCopy[language][key] }])) as typeof statMeta, [language]);
+  const displayedPersona = personaCopy[language];
+  const displayedCountry = countryCopy[language];
+  function changeLanguage(nextLanguage: Language) {
+    if (nextLanguage === language) return;
+    setLanguage(nextLanguage);
+    if (screen === "game") {
+      if (result) languageChangedDuringResultRef.current = true;
+      else {
+        setPlannedEvents([]);
+        setDirectorLoading(true);
+        void refillEventQueue([], profile, stats, history, turnNumber, country, nextLanguage);
+      }
+    }
+  }
+  const languageSwitcher = (
+    <div className="language-switcher" role="group" aria-label="Language / Idioma / 语言">
+      {(Object.keys(languageNames) as Language[]).map((key) => <button key={key} type="button" className={language === key ? "active" : ""} onClick={() => changeLanguage(key)} aria-pressed={language === key}>{languageNames[key]}</button>)}
+    </div>
+  );
+
+  useEffect(() => {
+    window.localStorage.setItem("one-life-language", language);
+    document.documentElement.lang = language === "zh" ? "zh-CN" : language;
+  }, [language]);
 
   useEffect(() => {
     async function loadAccountAndSave() {
@@ -605,64 +845,6 @@ export default function Home() {
     void loadAccountAndSave();
   }, []);
 
-  useEffect(() => {
-    if (!videoId || !["queued", "in_progress"].includes(videoStatus)) return;
-    const timer = window.setInterval(async () => {
-      try {
-        const response = await fetch(`/api/video?id=${encodeURIComponent(videoId)}`);
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-        setVideoStatus(data.status);
-        setVideoProgress(data.progress || 0);
-        if (data.status === "completed") setVideoUrl(`/api/video/content?id=${encodeURIComponent(videoId)}`);
-      } catch {
-        setVideoStatus("failed");
-      }
-    }, 12000);
-    return () => window.clearInterval(timer);
-  }, [videoId, videoStatus]);
-
-  const pendingPreloadKey = Object.values(videoJobs)
-    .filter((job) => job.status === "queued" || job.status === "in_progress")
-    .map((job) => `${job.eventId}:${job.apiId}:${job.status}`)
-    .sort()
-    .join("|");
-
-  useEffect(() => {
-    if (!pendingPreloadKey) return;
-    const timer = window.setInterval(async () => {
-      const pendingJobs = Object.values(videoJobs).filter((job) => job.status === "queued" || job.status === "in_progress");
-      const updates = await Promise.all(pendingJobs.map(async (job) => {
-        try {
-          const response = await fetch(`/api/video?id=${encodeURIComponent(job.apiId)}`);
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error);
-          return { ...job, status: data.status, progress: data.progress || 0 } as PreloadedVideoJob;
-        } catch {
-          return { ...job, status: "failed", progress: 0 } as PreloadedVideoJob;
-        }
-      }));
-      if (updates.length) setVideoJobs((current) => ({ ...current, ...Object.fromEntries(updates.map((job) => [job.eventId, job])) }));
-    }, 12000);
-    return () => window.clearInterval(timer);
-  }, [pendingPreloadKey, videoJobs]);
-
-  useEffect(() => {
-    const plannedCurrent = plannedEvents[0];
-    if (!plannedCurrent) return;
-    const job = videoJobs[plannedCurrent.id];
-    if (!job) return;
-    setVideoId(job.apiId);
-    setVideoStatus(job.status);
-    setVideoProgress(job.progress);
-    if (job.status === "completed") {
-      setVideoUrl(`/api/video/content?id=${encodeURIComponent(job.apiId)}`);
-      setMediaNotice("这段大事件开场 CG 已在两个选择之前开始制作，并在事件到来时自动载入。");
-    } else if (job.status === "queued" || job.status === "in_progress") {
-      setMediaNotice(`导演已提前制作这一幕，当前进度 ${Math.round(job.progress)}%。`);
-    }
-  }, [plannedEvents, videoJobs]);
-
   async function requestEventPlan(
     activeProfile: ReturnType<typeof makeProfile>,
     activeStats: Stats,
@@ -671,12 +853,14 @@ export default function Home() {
     count: number,
     activeTurn: number,
     activeCountry: Country = country,
+    activeLanguage: Language = language,
   ) {
     const response = await fetch("/api/plan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         country: countries[activeCountry].name,
+        locale: activeLanguage,
         profile: activeProfile,
         stats: activeStats,
         history: activeHistory,
@@ -690,39 +874,6 @@ export default function Home() {
     return data.events as PlannedLifeEvent[];
   }
 
-  function preloadFutureVideos(queue: PlannedLifeEvent[], activeProfile: ReturnType<typeof makeProfile>, activeCountry: Country = country) {
-    if (!mediaCapabilities.video) return;
-    queue.forEach((event, index) => {
-      if (!event.important || index < 2 || preloadStartedRef.current.has(event.id) || videoJobs[event.id]) return;
-      preloadStartedRef.current.add(event.id);
-      void (async () => {
-        try {
-          const response = await fetch("/api/video", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              profile: activeProfile,
-              country: countries[activeCountry].name,
-              age: event.age,
-              scene: event.scene,
-              narrative: event.prompt,
-              videoPrompt: event.videoPrompt,
-              preloaded: true,
-            }),
-          });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error);
-          setVideoJobs((current) => ({
-            ...current,
-            [event.id]: { eventId: event.id, apiId: data.id, status: data.status || "queued", progress: data.progress || 0 },
-          }));
-        } catch {
-          setVideoJobs((current) => ({ ...current, [event.id]: { eventId: event.id, apiId: "", status: "failed", progress: 0 } }));
-        }
-      })();
-    });
-  }
-
   async function refillEventQueue(
     existingFuture: PlannedLifeEvent[],
     activeProfile: ReturnType<typeof makeProfile>,
@@ -730,15 +881,15 @@ export default function Home() {
     activeHistory: HistoryItem[],
     activeTurn: number,
     activeCountry: Country = country,
+    activeLanguage: Language = language,
   ) {
     const needed = Math.max(0, 3 - existingFuture.length);
     if (!needed) return existingFuture;
     if (!existingFuture.length) setDirectorLoading(true);
     try {
-      const additions = await requestEventPlan(activeProfile, activeStats, activeHistory, existingFuture, needed, activeTurn, activeCountry);
+      const additions = await requestEventPlan(activeProfile, activeStats, activeHistory, existingFuture, needed, activeTurn, activeCountry, activeLanguage);
       const queue = [...existingFuture, ...additions];
       setPlannedEvents(queue);
-      preloadFutureVideos(queue, activeProfile, activeCountry);
       return queue;
     } finally {
       setDirectorLoading(false);
@@ -748,9 +899,10 @@ export default function Home() {
   async function persistSave(save: SavePayload) {
     setSaveState("saving");
     try {
-      const response = await fetch("/api/save", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(save) });
+      const localizedSave = { ...save, language };
+      const response = await fetch("/api/save", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(localizedSave) });
       if (!response.ok) throw new Error("save failed");
-      setCloudSave(save);
+      setCloudSave(localizedSave);
       setSaveState("saved");
     } catch {
       setSaveState("error");
@@ -767,6 +919,7 @@ export default function Home() {
         ? savedEvents.findIndex((event) => event.age > lastCompletedAge)
         : cloudSave.eventIndex;
     setCountry(cloudSave.country);
+    setLanguage(cloudSave.language || "zh");
     setPersonaId(cloudSave.personaId);
     setNameInput(cloudSave.nameInput);
     setStartingStats(cloudSave.startingStats);
@@ -775,17 +928,13 @@ export default function Home() {
     setEventIndex(cloudSave.screen === "end" ? savedEvents.length - 1 : Math.max(0, matchedIndex));
     setTurnNumber(cloudSave.turnNumber ?? cloudSave.history.length);
     setPlannedEvents(cloudSave.plannedEvents || []);
-    setVideoJobs(cloudSave.videoJobs || {});
-    Object.keys(cloudSave.videoJobs || {}).forEach((eventId) => preloadStartedRef.current.add(eventId));
     setHistory(cloudSave.history);
     setResult(null);
     setArtUrl(null);
-    setVideoUrl(null);
     setScreen(cloudSave.screen === "game" || cloudSave.screen === "end" ? cloudSave.screen : "name");
     if (cloudSave.screen === "game") {
       const restoredQueue = cloudSave.plannedEvents || [];
       void refillEventQueue(restoredQueue, cloudSave.profile, cloudSave.stats, cloudSave.history, cloudSave.turnNumber ?? cloudSave.history.length, cloudSave.country);
-      preloadFutureVideos(restoredQueue, cloudSave.profile, cloudSave.country);
     }
   }
 
@@ -796,7 +945,7 @@ export default function Home() {
 
   async function startLife() {
     if (startingPointsRemaining !== 0) return;
-    const nextProfile = makeProfile(country, nameInput, startingStats, personaId);
+    const nextProfile = { ...makeProfile(country, nameInput, startingStats, personaId), persona: displayedPersona[personaId].name };
     const nextStats = { ...startingStats };
     setProfile(nextProfile);
     setStats(nextStats);
@@ -804,8 +953,6 @@ export default function Home() {
     setEventIndex(0);
     setTurnNumber(0);
     setPlannedEvents([]);
-    setVideoJobs({});
-    preloadStartedRef.current.clear();
     setResult(null);
     setArtUrl(null);
     setScreen("game");
@@ -813,12 +960,11 @@ export default function Home() {
     try {
       const queue = await requestEventPlan(nextProfile, nextStats, [], [], 3, 0, country);
       setPlannedEvents(queue);
-      preloadFutureVideos(queue, nextProfile, country);
-      void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile: nextProfile, stats: nextStats, eventIndex: 0, eventAge: queue[0]?.age, history: [], plannedEvents: queue, turnNumber: 0, videoJobs: {} });
+      void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile: nextProfile, stats: nextStats, eventIndex: 0, eventAge: queue[0]?.age, history: [], plannedEvents: queue, turnNumber: 0 });
     } catch {
-      const fallbackQueue = fallbackEvents.slice(0, 3).map((event, index) => ({ ...event, id: `client-fallback-${Date.now()}-${index}`, videoPrompt: event.prompt, origin: "fallback" as const }));
+      const fallbackQueue = fallbackEvents.slice(0, 3).map((event, index) => ({ ...event, id: `client-fallback-${Date.now()}-${index}`, origin: "fallback" as const }));
       setPlannedEvents(fallbackQueue);
-      void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile: nextProfile, stats: nextStats, eventIndex: 0, eventAge: fallbackQueue[0]?.age, history: [], plannedEvents: fallbackQueue, turnNumber: 0, videoJobs: {} });
+      void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile: nextProfile, stats: nextStats, eventIndex: 0, eventAge: fallbackQueue[0]?.age, history: [], plannedEvents: fallbackQueue, turnNumber: 0 });
     } finally {
       setDirectorLoading(false);
     }
@@ -829,83 +975,60 @@ export default function Home() {
     setThinking(true);
     setPendingChoice(choice.text);
     setArtUrl(null);
-    setCgPlaying(false);
-    setVideoId(null);
-    setVideoUrl(null);
-    setVideoStatus("idle");
+    setCgPlaying(true);
+    setMediaNotice(copy.rendering);
     setMediaNotice("");
     try {
-      const response = await fetch("/api/turn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country: countries[country].name, profile, stats, history, event: currentEvent, choice }) });
+      const response = await fetch("/api/turn", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ country: displayedCountry[country].name, locale: language, profile, stats, history, event: currentEvent, choice }) });
       const data = await response.json();
-      setResult({ title: data.title || currentEvent.title, narrative: data.narrative || choice.fallback, effects: data.effects || choice.effects, live: Boolean(data.live) });
+      const nextResult = { title: data.title || currentEvent.title, narrative: data.narrative || choice.fallback, effects: data.effects || choice.effects, live: Boolean(data.live), illustrationPrompt: data.illustration_prompt || "" };
+      setResult(nextResult);
+      void createArtFor(nextResult);
     } catch {
-      setResult({ title: currentEvent.title, narrative: choice.fallback, effects: choice.effects, live: false });
+      const nextResult = { title: currentEvent.title, narrative: choice.fallback, effects: choice.effects, live: false, illustrationPrompt: "" };
+      setResult(nextResult);
+      void createArtFor(nextResult);
     } finally {
       setThinking(false);
     }
   }
 
-  async function createArt() {
-    if (!result || artLoading) return;
+  async function createArtFor(activeResult: NonNullable<typeof result>) {
+    const requestId = ++artRequestRef.current;
     setArtLoading(true);
     try {
+      const instantScene = await createLocalSceneImage(currentEvent, profile, `${pendingChoice}|${activeResult.narrative}`);
+      if (requestId !== artRequestRef.current) return;
+      setArtUrl(instantScene);
+      setCgPlaying(true);
       if (mediaCapabilities.image) {
-        const response = await fetch("/api/illustrate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile, country: countries[country].name, age: currentEvent.age, scene: currentEvent.scene, narrative: result.narrative }) });
+        const response = await fetch("/api/illustrate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile, country: displayedCountry[country].name, age: currentEvent.age, scene: currentEvent.scene, choice: pendingChoice, narrative: activeResult.narrative, illustrationPrompt: activeResult.illustrationPrompt, locale: language }) });
         const data = await response.json();
         if (!response.ok || !data.image) throw new Error(data.error || "AI 画面生成失败");
+        if (requestId !== artRequestRef.current) return;
         setArtUrl(data.image);
-        setMediaNotice("这张专属画面由 GPT Image 2 根据当前事件生成。");
+        setMediaNotice(language === "en" ? "This scene was painted for this exact life moment by GPT Image." : language === "es" ? "GPT Image pintó esta escena para este momento exacto." : "这张专属画面由 GPT Image 根据当前事件生成。");
       } else {
-        setArtUrl(await createLocalSceneImage(currentEvent, profile, result.narrative));
-        setMediaNotice("当前未连接 OpenAI API：已在你的设备上绘制专属场景。连接后会自动升级为 GPT Image 2 插画。");
+        setMediaNotice(language === "en" ? "A new animated scene was composed from this exact choice and outcome." : language === "es" ? "Se compuso una nueva escena animada para esta elección y su resultado." : "已根据这次选择与结果重新构图，并生成新的动态场景。");
       }
       setCgPlaying(true);
     } catch (error) {
-      setArtUrl(await createLocalSceneImage(currentEvent, profile, result.narrative));
+      if (requestId !== artRequestRef.current) return;
       setCgPlaying(true);
-      setMediaNotice(`${error instanceof Error ? error.message : "AI 画面暂不可用"}；已自动改用本地专属场景。`);
+      setMediaNotice(language === "zh" ? `${error instanceof Error ? error.message : "AI 画面暂不可用"}；已自动使用即时插画，不会打断游玩。` : language === "en" ? "AI painting took too long, so the instant illustrated scene is being used without interrupting play." : "La pintura de IA tardó demasiado; usamos la escena ilustrada instantánea sin interrumpir la partida.");
     } finally {
-      setArtLoading(false);
+      if (requestId === artRequestRef.current) setArtLoading(false);
     }
   }
 
-  async function createVideo() {
-    if (!result || ["queued", "in_progress"].includes(videoStatus)) return;
-    setVideoStatus(mediaCapabilities.video ? "queued" : "in_progress");
-    setVideoProgress(0);
-    try {
-      if (!mediaCapabilities.video) {
-        const localVideoUrl = await createLocalStoryVideo(currentEvent, profile, result.narrative, setVideoProgress);
-        setVideoUrl(localVideoUrl);
-        setVideoStatus("completed");
-        setVideoProgress(100);
-        setMediaNotice("已生成一段可播放、可保存的本地剧情短片。连接 OpenAI API 后，这个按钮会改为 Sora 2 视频。");
-        return;
-      }
-      const response = await fetch("/api/video", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profile, country: countries[country].name, age: currentEvent.age, scene: currentEvent.scene, narrative: result.narrative }) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      setVideoId(data.id);
-      setVideoStatus(data.status || "queued");
-      setVideoProgress(data.progress || 0);
-      setMediaNotice("Sora 2 已开始制作。真实视频通常需要数分钟，可以继续停留在本幕等待进度。");
-    } catch (error) {
-      try {
-        setVideoStatus("in_progress");
-        const localVideoUrl = await createLocalStoryVideo(currentEvent, profile, result.narrative, setVideoProgress);
-        setVideoUrl(localVideoUrl);
-        setVideoStatus("completed");
-        setVideoProgress(100);
-        setMediaNotice(`${error instanceof Error ? error.message : "Sora 暂不可用"}；已自动生成本地剧情短片。`);
-      } catch (fallbackError) {
-        setVideoStatus("failed");
-        setMediaNotice(fallbackError instanceof Error ? fallbackError.message : "当前浏览器无法录制剧情短片。");
-      }
-    }
+  async function createArt() {
+    if (!result || artLoading) return;
+    await createArtFor(result);
   }
 
   function continueLife() {
     if (!result) return;
+    artRequestRef.current += 1;
     const nextStats = { ...stats };
     (Object.keys(result.effects) as StatKey[]).forEach((key) => {
       const delta = Math.max(-18, Math.min(18, Number(result.effects[key] || 0)));
@@ -916,34 +1039,28 @@ export default function Home() {
     const nextScreen: Screen = ended ? "end" : "game";
     const nextIndex = eventIndex + 1;
     const nextTurn = turnNumber + 1;
-    const nextQueue = plannedEvents.length ? plannedEvents.slice(1) : [];
-    const remainingIds = new Set(nextQueue.map((event) => event.id));
-    const remainingVideoJobs = Object.fromEntries(Object.entries(videoJobs).filter(([eventId]) => remainingIds.has(eventId)));
+    const nextQueue = languageChangedDuringResultRef.current ? [] : plannedEvents.length ? plannedEvents.slice(1) : [];
+    languageChangedDuringResultRef.current = false;
     setStats(nextStats);
     setHistory(nextHistory);
     setTurnNumber(nextTurn);
     setPlannedEvents(nextQueue);
-    setVideoJobs(remainingVideoJobs);
     setResult(null);
     setPendingChoice("");
     setArtUrl(null);
-    setVideoId(null);
-    setVideoUrl(null);
-    setVideoStatus("idle");
-    setVideoProgress(0);
     setMediaNotice("");
     setEventIndex(nextIndex);
     setScreen(nextScreen);
     if (ended) {
-      void persistSave({ version: 1, screen: nextScreen, country, personaId, nameInput, startingStats, profile, stats: nextStats, eventIndex: nextIndex, eventAge: currentEvent.age, history: nextHistory, plannedEvents: [], turnNumber: nextTurn, videoJobs: {} });
+      void persistSave({ version: 1, screen: nextScreen, country, personaId, nameInput, startingStats, profile, stats: nextStats, eventIndex: nextIndex, eventAge: currentEvent.age, history: nextHistory, plannedEvents: [], turnNumber: nextTurn });
       return;
     }
     void (async () => {
       try {
         const fullQueue = await refillEventQueue(nextQueue, profile, nextStats, nextHistory, nextTurn, country);
-        void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile, stats: nextStats, eventIndex: nextIndex, eventAge: fullQueue[0]?.age, history: nextHistory, plannedEvents: fullQueue, turnNumber: nextTurn, videoJobs: remainingVideoJobs });
+        void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile, stats: nextStats, eventIndex: nextIndex, eventAge: fullQueue[0]?.age, history: nextHistory, plannedEvents: fullQueue, turnNumber: nextTurn });
       } catch {
-        void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile, stats: nextStats, eventIndex: nextIndex, eventAge: nextQueue[0]?.age, history: nextHistory, plannedEvents: nextQueue, turnNumber: nextTurn, videoJobs: remainingVideoJobs });
+        void persistSave({ version: 1, screen: "game", country, personaId, nameInput, startingStats, profile, stats: nextStats, eventIndex: nextIndex, eventAge: nextQueue[0]?.age, history: nextHistory, plannedEvents: nextQueue, turnNumber: nextTurn });
       }
     })();
   }
@@ -953,103 +1070,103 @@ export default function Home() {
     setResult(null);
     setHistory([]);
     setPlannedEvents([]);
-    setVideoJobs({});
     setScreen("splash");
   }
 
   if (screen === "splash") {
     return (
-      <main className="splash-shell">
+      <><main className="splash-shell">
+        {languageSwitcher}
         <div className="splash-cloud cloud-one" /><div className="splash-cloud cloud-two" />
-        <nav className="playful-nav"><div className="playful-logo"><span>一</span><b>这一生</b></div><div className="account-pill"><span className="account-dot" />{account?.displayName || "正在读取账号"}</div></nav>
+        <nav className="playful-nav"><div className="playful-logo"><span>一</span><b>{copy.brand}</b></div><div className="account-pill"><span className="account-dot" />{account?.displayName || copy.accountLoading}</div></nav>
         <section className="splash-hero">
-          <p className="sticker">✦ AI LIFE STORY GAME</p>
-          <h1>这一生<br /><em>会走向哪里？</em></h1>
-          <p>取一个名字，选一副性格底牌。每一次决定都会改变故事、数值和下一幕的风景。</p>
+          <p className="sticker">{copy.heroKicker}</p>
+          <h1>{copy.heroTitle}<br /><em>{copy.heroAccent}</em></h1>
+          <p>{copy.heroLead}</p>
           <div className="splash-actions">
-            <button className="big-play-button" onClick={() => setScreen("name")}><span>开始新人生</span><b>▶</b></button>
-            {cloudSave && <button className="continue-save" onClick={restoreSave}><span>继续 {cloudSave.profile.name} 的人生</span><small>{cloudSave.history.length} 个转折 · {saveState === "saved" ? "云端已保存" : "本地试玩存档"}</small></button>}
+            <button className="big-play-button" onClick={() => setScreen("name")}><span>{copy.start}</span><b>▶</b></button>
+            {cloudSave && <button className="continue-save" onClick={restoreSave}><span>{copy.continue} {cloudSave.profile.name}</span><small>{cloudSave.history.length} {copy.turns} · {saveState === "saved" ? copy.saved : copy.localPlay}</small></button>}
           </div>
-          <div className="feature-bubbles"><span>🎭 自定义人设</span><span>🧠 AI 创造每个事件</span><span>🎬 大事件提前两步制作</span></div>
+          <div className="feature-bubbles">{copy.features.map((feature) => <span key={feature}>{feature}</span>)}</div>
         </section>
-        <aside className="splash-card"><span className="tiny-label">TODAY&apos;S PROPHECY</span><div className="mini-scene"><i>☀</i><b>你会遇见<br />意料之外的自己</b></div><p>没有最优解，只有被你走出来的路。</p></aside>
-        <footer className="splash-footer"><span>{account?.localPreview ? "本地试玩模式" : account?.authenticated ? "ChatGPT 账号已连接" : "登录后可跨设备保存"}</span>{account && !account.localPreview && (account.authenticated ? <a href="/signout-with-chatgpt?return_to=/">退出账号</a> : <a href="/signin-with-chatgpt?return_to=/">用 ChatGPT 登录</a>)}</footer>
-      </main>
+        <aside className="splash-card"><span className="tiny-label">{copy.prophecy}</span><div className="mini-scene"><i>☀</i><b>{copy.prophecyLine.split("\n").map((line) => <span key={line}>{line}<br /></span>)}</b></div><p>{copy.prophecyNote}</p></aside>
+        <footer className="splash-footer"><span>{account?.localPreview ? copy.localPreview : account?.authenticated ? copy.accountConnected : copy.signInHint}</span>{account && !account.localPreview && (account.authenticated ? <a href="/signout-with-chatgpt?return_to=/">{copy.signOut}</a> : <a href="/signin-with-chatgpt?return_to=/">{copy.signIn}</a>)}</footer>
+      </main></>
     );
   }
 
   if (screen === "name") {
     return (
-      <main className="setup-shell name-step">
-        <nav className="setup-nav"><button onClick={() => setScreen("splash")}>← 返回</button><div><span className="active" /><span /></div><small>1 / 2</small></nav>
+      <><main className="setup-shell name-step">{languageSwitcher}
+        <nav className="setup-nav"><button onClick={() => setScreen("splash")}>← {copy.back}</button><div><span className="active" /><span /></div><small>1 / 2</small></nav>
         <section className="name-card">
-          <span className="step-emoji">✍️</span><p className="sticker">FIRST THINGS FIRST</p>
-          <h1>这一生，<br />你想叫什么？</h1>
-          <p>这是会出现在故事、回忆和人生结局里的名字。</p>
-          <label className="big-name-input"><input autoFocus maxLength={24} value={nameInput} onChange={(event) => setNameInput(event.target.value)} placeholder="输入你的名字" /><span>{nameInput.length}/24</span></label>
-          <button className="big-play-button" onClick={() => setScreen("identity")}><span>{nameInput.trim() ? `你好，${nameInput.trim()}` : "让命运替我取名"}</span><b>→</b></button>
+          <span className="step-emoji">✍️</span><p className="sticker">{copy.nameKicker}</p>
+          <h1>{copy.nameTitle}</h1><p>{copy.nameHelp}</p>
+          <label className="big-name-input"><input autoFocus maxLength={24} value={nameInput} onChange={(event) => setNameInput(event.target.value)} placeholder={copy.namePlaceholder} /><span>{nameInput.length}/24</span></label>
+          <button className="big-play-button" onClick={() => setScreen("identity")}><span>{nameInput.trim() ? `${copy.hello}${nameInput.trim()}` : copy.randomName}</span><b>→</b></button>
         </section>
-      </main>
+      </main></>
     );
   }
 
   if (screen === "identity") {
     return (
-      <main className="setup-shell identity-step">
-        <nav className="setup-nav"><button onClick={() => setScreen("name")}>← 上一步</button><div><span className="active" /><span className="active" /></div><small>2 / 2</small></nav>
+      <><main className="setup-shell identity-step">{languageSwitcher}
+        <nav className="setup-nav"><button onClick={() => setScreen("name")}>← {copy.previous}</button><div><span className="active" /><span className="active" /></div><small>2 / 2</small></nav>
         <section className="identity-builder">
-          <header><div><p className="sticker">BUILD YOUR BEGINNING</p><h1>选择你的<br />人生底牌</h1></div><p>先选一个人设作为起点，再亲手微调。所有人都拥有同样的 <b>{STARTING_POINT_BUDGET}</b> 点，没有完美开局。</p></header>
+          <header><div><p className="sticker">{copy.buildKicker}</p><h1>{copy.buildTitle}</h1></div><p>{copy.buildLead} <b>{STARTING_POINT_BUDGET}</b></p></header>
           <div className="identity-columns">
-            <section className="choice-card"><div className="section-title"><span>01</span><div><b>出生背景</b><small>影响地点与特有事件</small></div></div><div className="country-grid playful">{(Object.keys(countries) as Country[]).map((key) => <button key={key} className={`country-card ${country === key ? "selected" : ""}`} onClick={() => setCountry(key)}><span>{countries[key].glyph}</span><b>{countries[key].name}</b><small>{countries[key].subtitle}</small></button>)}</div></section>
-            <section className="choice-card"><div className="section-title"><span>02</span><div><b>身份人设</b><small>点击后仍可继续微调</small></div></div><div className="persona-grid">{(Object.keys(personas) as PersonaId[]).map((key) => <button key={key} data-color={personas[key].color} className={personaId === key ? "selected" : ""} onClick={() => selectPersona(key)}><span>{personas[key].emoji}</span><b>{personas[key].name}</b><small>{personas[key].tagline}</small></button>)}</div></section>
+            <section className="choice-card"><div className="section-title"><span>01</span><div><b>{copy.birthplace}</b><small>{copy.birthplaceHelp}</small></div></div><div className="country-grid playful">{(Object.keys(countries) as Country[]).map((key) => <button key={key} className={`country-card ${country === key ? "selected" : ""}`} onClick={() => setCountry(key)}><span>{countries[key].glyph}</span><b>{displayedCountry[key].name}</b><small>{displayedCountry[key].subtitle}</small></button>)}</div></section>
+            <section className="choice-card"><div className="section-title"><span>02</span><div><b>{copy.persona}</b><small>{copy.personaHelp}</small></div></div><div className="persona-grid">{(Object.keys(personas) as PersonaId[]).map((key) => <button key={key} data-color={personas[key].color} className={personaId === key ? "selected" : ""} onClick={() => selectPersona(key)}><span>{personas[key].emoji}</span><b>{displayedPersona[key].name}</b><small>{displayedPersona[key].tagline}</small></button>)}</div></section>
           </div>
-          <section className="choice-card stat-choice"><div className="allocation-heading"><div className="section-title"><span>03</span><div><b>调整起点数值</b><small>压力越低，占用点数越多</small></div></div><div className="allocation-status" data-state={startingPointsRemaining === 0 ? "ready" : startingPointsRemaining > 0 ? "remaining" : "over"}><span>{startingPointsRemaining === 0 ? "刚刚好" : startingPointsRemaining > 0 ? "还剩" : "超出"}</span><strong>{Math.abs(startingPointsRemaining)}</strong></div></div><div className="stat-builder">{(Object.keys(statMeta) as StatKey[]).map((key) => <label className={`stat-control ${key === "stress" ? "inverse" : ""}`} key={key}><span><b>{statMeta[key].icon} {statMeta[key].label}</b><strong>{startingStats[key]}</strong></span><input type="range" min="20" max="80" step="5" value={startingStats[key]} onChange={(event) => setStartingStats((current) => ({ ...current, [key]: Number(event.target.value) }))} /><small>{statMeta[key].description}</small></label>)}</div><div className="starting-portrait"><span>你的起点画像</span><strong>{startingPortrait.title}</strong><p>{startingPortrait.description}</p><div>{startingPortrait.signals.map((signal) => <small key={signal}>{signal}</small>)}</div></div></section>
-          <button className="big-play-button launch-life" onClick={startLife} disabled={startingPointsRemaining !== 0}><span>{startingPointsRemaining === 0 ? `开始 ${nameInput.trim() || "这位陌生人"} 的一生` : startingPointsRemaining > 0 ? `还需分配 ${startingPointsRemaining} 点` : `请减少 ${Math.abs(startingPointsRemaining)} 点`}</span><b>▶</b></button>
+          <section className="choice-card stat-choice"><div className="allocation-heading"><div className="section-title"><span>03</span><div><b>{copy.adjust}</b><small>{copy.adjustHelp}</small></div></div><div className="allocation-status" data-state={startingPointsRemaining === 0 ? "ready" : startingPointsRemaining > 0 ? "remaining" : "over"}><span>{startingPointsRemaining === 0 ? copy.perfect : startingPointsRemaining > 0 ? copy.remaining : copy.over}</span><strong>{Math.abs(startingPointsRemaining)}</strong></div></div><div className="stat-builder">{(Object.keys(displayedStats) as StatKey[]).map((key) => <label className={`stat-control ${key === "stress" ? "inverse" : ""}`} key={key}><span><b>{displayedStats[key].icon} {displayedStats[key].label}</b><strong>{startingStats[key]}</strong></span><input type="range" min="20" max="80" step="5" value={startingStats[key]} onChange={(event) => setStartingStats((current) => ({ ...current, [key]: Number(event.target.value) }))} /><small>{displayedStats[key].description}</small></label>)}</div><div className="starting-portrait"><span>{copy.portrait}</span><strong>{startingPortrait.title}</strong><p>{startingPortrait.description}</p><div>{startingPortrait.signals.map((signal) => <small key={signal}>{signal}</small>)}</div></div></section>
+          <button className="big-play-button launch-life" onClick={startLife} disabled={startingPointsRemaining !== 0}><span>{startingPointsRemaining === 0 ? `${copy.beginLife} · ${nameInput.trim() || displayedPersona[personaId].name}` : startingPointsRemaining > 0 ? `${copy.needAllocate} ${startingPointsRemaining} ${copy.points}` : `${copy.reduce} ${Math.abs(startingPointsRemaining)} ${copy.points}`}</span><b>▶</b></button>
         </section>
-      </main>
+      </main></>
     );
   }
 
   if (screen === "game" && directorLoading && plannedEvents.length === 0) {
     return (
-      <main className="director-loading-shell">
+      <><main className="director-loading-shell">{languageSwitcher}
         <div className="director-loading-card">
           <div className="thinking-orbit"><span /><span /><span /></div>
-          <p className="sticker">AI LIFE DIRECTOR</p>
-          <h1>命运正在写下<br />你看不见的后两步</h1>
-          <p>当前事件会先公开，未来事件保持隐藏；如果两步后是大事件，CG 会立即在后台开始制作。</p>
+          <p className="sticker">{copy.directorKicker}</p>
+          <h1>{copy.directorTitle.split("\n").map((line) => <span key={line}>{line}<br /></span>)}</h1>
+          <p>{copy.directorLead}</p>
         </div>
-      </main>
+      </main></>
     );
   }
 
   if (screen === "end") {
     const years = history.at(-1)?.age || 82;
     const brightest = [...history].sort((a, b) => b.narrative.length - a.narrative.length)[0];
-    return <main className="end-shell"><div className="end-card"><p className="sticker">A LIFE, REMEMBERED</p><h1>{profile.name}</h1><p className="lifespan">{profile.birthYear} — {profile.birthYear + years}</p><div className="epitaph">“{profile.name}曾经害怕许多尚未发生的事，也在真正到来时，比自己想象得更勇敢。人生没有成为计划中的样子，却留下了只属于自己的纹路。”</div><div className="life-summary"><div><small>走过</small><strong>{years} 年</strong></div><div><small>重要选择</small><strong>{history.length} 次</strong></div><div><small>最后心境</small><strong>{stats.happiness >= 65 ? "安宁" : stats.happiness >= 45 ? "复杂" : "仍有牵挂"}</strong></div></div>{brightest && <p className="remembered"><span>最清晰的记忆</span>{brightest.age}岁，{brightest.title}。{brightest.narrative}</p>}<div className="mini-timeline">{history.map((item) => <div key={`${item.age}-${item.title}`}><b>{item.age}</b><span>{item.title}</span></div>)}</div><button className="big-play-button" onClick={restart}><span>再活一次</span><b>↻</b></button></div></main>;
+    const epitaph = language === "en" ? `${profile.name} feared many things that had not yet happened, yet met real life with more courage than expected. This life did not follow the plan, but it left a pattern that belonged to no one else.` : language === "es" ? `${profile.name} temió muchas cosas que aún no habían ocurrido, pero afrontó la vida real con más valor del que imaginaba. Esta vida no siguió el plan, pero dejó una huella irrepetible.` : `${profile.name}曾经害怕许多尚未发生的事，也在真正到来时，比自己想象得更勇敢。人生没有成为计划中的样子，却留下了只属于自己的纹路。`;
+    return <><main className="end-shell">{languageSwitcher}<div className="end-card"><p className="sticker">{copy.remembered}</p><h1>{profile.name}</h1><p className="lifespan">{profile.birthYear} — {profile.birthYear + years}</p><div className="epitaph">“{epitaph}”</div><div className="life-summary"><div><small>{copy.lived}</small><strong>{years} {copy.years}</strong></div><div><small>{copy.choicesMade}</small><strong>{history.length} {copy.times}</strong></div><div><small>{copy.finalMood}</small><strong>{stats.happiness >= 65 ? copy.peaceful : stats.happiness >= 45 ? copy.complex : copy.lingering}</strong></div></div>{brightest && <p className="remembered"><span>{copy.clearest}</span>{brightest.age} {copy.ageUnit} · {brightest.title}. {brightest.narrative}</p>}<div className="mini-timeline">{history.map((item) => <div key={`${item.age}-${item.title}`}><b>{item.age}</b><span>{item.title}</span></div>)}</div><button className="big-play-button" onClick={restart}><span>{copy.liveAgain}</span><b>↻</b></button></div></main></>;
   }
 
   return (
-    <main className={`game-shell scene-${currentEvent.scene}`}>
-      <header className="game-header"><button className="wordmark" onClick={() => setScreen("splash")}><span className="brand-mark">一</span><b>这一生</b></button><div className="life-progress"><span style={{ width: `${Math.max(4, (currentEvent.age / 82) * 100)}%` }} /></div><div className="director-chip" data-loading={directorLoading}>{directorLoading ? "正在续写未来" : plannedEvents.length >= 3 ? "已秘密规划后两步" : "AI 实时导演"}</div><div className="save-chip" data-state={saveState}>{saveState === "saving" ? "正在保存" : saveState === "saved" ? "云端已保存" : account?.localPreview ? "本地试玩" : "未连接存档"}</div><div className="age-stamp"><small>{currentEvent.chapter}</small><strong>{currentEvent.age}<i>岁</i></strong></div></header>
+    <><main className={`game-shell scene-${currentEvent.scene}`}>{languageSwitcher}
+      <header className="game-header"><button className="wordmark" onClick={() => setScreen("splash")}><span className="brand-mark">一</span><b>{copy.brand}</b></button><div className="life-progress"><span style={{ width: `${Math.max(4, (currentEvent.age / 82) * 100)}%` }} /></div><div className="director-chip" data-loading={directorLoading}>{directorLoading ? copy.directing : plannedEvents.length >= 3 ? copy.planned : copy.liveDirector}</div><div className="save-chip" data-state={saveState}>{saveState === "saving" ? copy.saving : saveState === "saved" ? copy.saved : account?.localPreview ? copy.localPlay : copy.noSave}</div><div className="age-stamp"><small>{currentEvent.chapter}</small><strong>{currentEvent.age}<i>{copy.ageUnit}</i></strong></div></header>
       <section className="game-layout">
-        <aside className="identity-panel"><div className="avatar-bubble">{personas[profile.personaId].emoji}</div><p className="panel-kicker">你的这一生</p><h2>{profile.name}</h2><p>{profile.birthYear}年生于{profile.place}</p><div className="profile-facts"><span>{profile.persona}</span><span>{profile.family}</span></div><div className="stats">{(Object.keys(statMeta) as StatKey[]).map((key) => <div className="stat" key={key}><div><span>{statMeta[key].icon} {statMeta[key].label}</span><b>{stats[key]}</b></div><i><em style={{ width: `${stats[key]}%` }} /></i></div>)}</div><div className="past"><span>已经走过</span><strong>{history.length} 个转折</strong></div></aside>
+        <aside className="identity-panel"><div className="avatar-bubble">{personas[profile.personaId].emoji}</div><p className="panel-kicker">{copy.yourLife}</p><h2>{profile.name}</h2><p>{profile.birthYear} · {copy.bornIn} {profile.place}</p><div className="profile-facts"><span>{displayedPersona[profile.personaId].name}</span>{language === "zh" && <span>{profile.family}</span>}</div><div className="stats">{(Object.keys(displayedStats) as StatKey[]).map((key) => <div className="stat" key={key}><div><span>{displayedStats[key].icon} {displayedStats[key].label}</span><b>{stats[key]}</b></div><i><em style={{ width: `${stats[key]}%` }} /></i></div>)}</div><div className="past"><span>{copy.walked}</span><strong>{history.length} {copy.turns}</strong></div></aside>
         <section className="story-panel">
           <div className={`memory-canvas ${artUrl ? "has-art" : ""} ${cgPlaying ? "cg-playing" : ""}`}>
-            {videoUrl ? <video src={videoUrl} controls autoPlay playsInline /> : artUrl ? <img src={artUrl} alt={`${profile.name}${currentEvent.age}岁时的人生场景`} /> : <><div className="scene-stars">✦　·　✦</div><div className="sun" /><div className="horizon" /><div className="figure" /><p>{currentEvent.chapter}</p></>}
+            {artUrl ? <img src={artUrl} alt={`${profile.name}, ${currentEvent.age} ${copy.ageUnit}`} /> : <div className="scene-placeholder"><div className="scene-stars">✦　·　✦</div><div className="sun" /><div className="horizon" /><div className="paper-house" /><div className="paper-trees" /><p>{currentEvent.chapter}</p></div>}
             {currentEvent.important && <span className="cg-badge">SPECIAL CG</span>}
+            {(thinking || artLoading) && <div className="art-rendering"><span className="paint-spark spark-one" /><span className="paint-spark spark-two" /><span className="paint-spark spark-three" /><b>{artLoading ? copy.aiPainting : copy.thinking}</b><small>{copy.rendering}</small></div>}
           </div>
-          <div className="story-content"><p className="chapter-label">第 {String(turnNumber + 1).padStart(2, "0")} 章 · {currentEvent.chapter} · {plannedEvents[0]?.origin === "ai" ? "AI 现场生成" : "备用剧情"}</p><h1>{result ? result.title : currentEvent.title}</h1>{!result && !thinking && <p className="event-copy">{currentEvent.prompt}</p>}
-            {thinking && <div className="thinking-card"><div className="thinking-orbit"><span /><span /><span /></div><div><strong>人生导演正在推演</strong><p>读取过去的选择 · 衡量现实条件 · 寻找可能的结果</p></div></div>}
-            {result && <div className="result-block"><div className="director-line"><span>{result.live ? "AI 实时推演" : "本地导演模式"}</span><i /></div><p>{result.narrative}</p><div className="effect-row">{(Object.entries(result.effects) as [StatKey, number][]).filter(([, value]) => value !== 0).map(([key, value]) => <span className={value > 0 === statMeta[key].positive ? "good" : "hard"} key={key}>{statMeta[key].label} {value > 0 ? "+" : ""}{value}</span>)}</div>
-              <div className="cg-actions"><button className="art-button" onClick={artUrl ? () => setCgPlaying((value) => !value) : createArt} disabled={artLoading}><span>{artLoading ? "正在绘制专属场景…" : artUrl ? cgPlaying ? "暂停动态画面" : "播放动态画面" : mediaCapabilities.image ? "🪄 生成 AI 专属画面" : "🪄 绘制本地专属画面"}</span></button><button className="video-button" onClick={createVideo} disabled={["queued", "in_progress", "completed"].includes(videoStatus)}>{videoStatus === "queued" || videoStatus === "in_progress" ? `${mediaCapabilities.video ? "Sora 制作" : "本地录制"}中 ${Math.round(videoProgress)}%` : videoStatus === "completed" ? "✓ 剧情短片已生成" : videoStatus === "failed" ? "重新尝试生成视频" : mediaCapabilities.video ? "🎬 生成 Sora 视频" : "🎬 生成本地剧情短片"}</button></div>
+          <div className="story-content"><p className="chapter-label">{copy.chapter} {String(turnNumber + 1).padStart(2, "0")} · {currentEvent.chapter} · {plannedEvents[0]?.origin === "ai" ? copy.aiGenerated : copy.fallbackStory}</p><h1>{result ? result.title : currentEvent.title}</h1>{!result && !thinking && <p className="event-copy">{currentEvent.prompt}</p>}
+            {thinking && <div className="thinking-card"><div className="thinking-orbit"><span /><span /><span /></div><div><strong>{copy.thinking}</strong><p>{copy.thinkingDetail}</p></div></div>}
+            {result && <div className="result-block"><div className="director-line"><span>{result.live ? copy.aiTurn : copy.localTurn}</span><i /></div><p>{result.narrative}</p><div className="effect-row">{(Object.entries(result.effects) as [StatKey, number][]).filter(([, value]) => value !== 0).map(([key, value]) => <span className={value > 0 === displayedStats[key].positive ? "good" : "hard"} key={key}>{displayedStats[key].label} {value > 0 ? "+" : ""}{value}</span>)}</div>
+              <div className="cg-actions"><button className="art-button" onClick={() => setCgPlaying((value) => !value)} disabled={artLoading}><span>{artLoading ? copy.aiPainting : cgPlaying ? copy.pauseMotion : copy.replayMotion}</span></button>{mediaCapabilities.image && <button className="art-button regenerate-art" onClick={createArt} disabled={artLoading}>{copy.regenerate}</button>}</div>
               {mediaNotice && <p className="media-notice">{mediaNotice}</p>}
-              {videoUrl && <a className="download-video" href={videoUrl} download={`${profile.name}-${currentEvent.age}岁-${currentEvent.title}.${videoId ? "mp4" : "webm"}`}>↓ 保存这段剧情短片</a>}
-              <button className="continue-button" onClick={continueLife}>继续向前 <span>→</span></button></div>}
-            {!result && !thinking && <div className="choices"><p>你会怎么选择？</p>{currentEvent.choices.map((choice, index) => <button key={choice.text} onClick={() => choose(choice)}><span>{String.fromCharCode(65 + index)}</span><strong>{choice.text}</strong><i>→</i></button>)}</div>}
+              <button className="continue-button" onClick={continueLife}>{copy.continueForward} <span>→</span></button></div>}
+            {!result && !thinking && <div className="choices"><p>{copy.choose}</p>{currentEvent.choices.map((choice, index) => <button key={choice.text} onClick={() => choose(choice)}><span>{String.fromCharCode(65 + index)}</span><strong>{choice.text}</strong><i>→</i></button>)}</div>}
           </div>
         </section>
       </section>
-    </main>
+    </main></>
   );
 }

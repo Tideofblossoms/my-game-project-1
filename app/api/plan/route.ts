@@ -4,6 +4,7 @@ const statNames = ["health", "happiness", "ability", "money", "relations", "stre
 const scenes = ["childhood", "school", "departure", "station", "city", "home", "crossroads", "late-life", "sunset"] as const;
 
 type PlanRequest = {
+  locale?: "zh" | "en" | "es";
   country?: string;
   profile?: Record<string, unknown>;
   stats?: Record<string, number>;
@@ -29,24 +30,51 @@ function safeEffects(value: unknown) {
   return Object.fromEntries(statNames.map((key) => [key, Math.max(-14, Math.min(14, Number(effects[key] || 0)))]));
 }
 
-function chapterForAge(age: number) {
-  if (age < 6) return "幼年";
-  if (age < 13) return "童年";
-  if (age < 19) return "青春";
-  if (age < 26) return "初离家";
-  if (age < 36) return "青年";
-  if (age < 51) return "中途";
-  if (age < 66) return "转身";
-  if (age < 78) return "晚年";
-  return "余晖";
+function chapterForAge(age: number, locale: PlanRequest["locale"] = "zh") {
+  const chapters = locale === "en"
+    ? ["Early years", "Childhood", "Youth", "Leaving home", "Young adult", "Midlife", "New direction", "Later life", "Twilight"]
+    : locale === "es"
+      ? ["Primeros años", "Infancia", "Juventud", "Partida", "Adultez joven", "Mitad de vida", "Nuevo rumbo", "Madurez", "Atardecer"]
+      : ["幼年", "童年", "青春", "初离家", "青年", "中途", "转身", "晚年", "余晖"];
+  if (age < 6) return chapters[0];
+  if (age < 13) return chapters[1];
+  if (age < 19) return chapters[2];
+  if (age < 26) return chapters[3];
+  if (age < 36) return chapters[4];
+  if (age < 51) return chapters[5];
+  if (age < 66) return chapters[6];
+  if (age < 78) return chapters[7];
+  return chapters[8];
 }
 
 function fallbackPlan(body: PlanRequest, count: number, startingAge: number) {
-  const themes = [
+  const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
+  const themes = locale === "en" ? [
+    ["An unexpected invitation", "On an otherwise ordinary afternoon, someone offers you something that deserves serious thought. It may not change your life today, but it could change how you see yourself for years.", "city"],
+    ["A new distance", "A meaningful relationship shifts in a subtle way. Nobody has clearly done wrong, yet silence and reaching out will leave very different traces.", "home"],
+    ["Life rearranged", "Reality suddenly changes and the old plan cannot continue intact. You must redistribute your time between safety, responsibility, and the life you truly want.", "crossroads"],
+  ] as const : locale === "es" ? [
+    ["Una invitación inesperada", "En una tarde aparentemente normal, alguien te propone algo que merece pensarse en serio. Quizá no cambie tu vida hoy, pero sí cómo te verás durante años.", "city"],
+    ["Una nueva distancia", "Una relación importante cambia de forma sutil. Nadie ha hecho claramente nada malo, pero callar y acercarte dejarán huellas muy distintas.", "home"],
+    ["Reordenar la vida", "La realidad cambia de repente y el plan anterior ya no puede seguir intacto. Debes repartir tu tiempo entre seguridad, responsabilidad y la vida que deseas.", "crossroads"],
+  ] as const : [
     ["一个意外的邀请", "一个原本普通的下午，有人向你提出了一件需要认真考虑的事。它不会立刻改变人生，却可能改变你接下来几年看待自己的方式。", "city"],
     ["关系里的新距离", "一段重要关系出现了细微变化。没有人明确做错什么，但你意识到继续沉默和主动靠近都会留下不同后果。", "home"],
     ["必须重新安排的生活", "现实条件突然改变，原来的计划无法完整继续。你需要在安全、责任和真正想要的生活之间重新分配时间。", "crossroads"],
   ] as const;
+  const choiceCopy = locale === "en" ? [
+    ["Face it and understand the real problem", "Choose action and honest conversation", "You do not find a perfect answer, but the problem becomes clear enough to handle. Action brings pressure—and room to move."],
+    ["Watch for a while before deciding", "Keep time for judgment", "You do not push events forward yet. Waiting reveals details, while some opportunities quietly change shape."],
+    ["Protect the life you have and decline", "Prioritize stability and boundaries", "You preserve a familiar order. Life continues, but another possible road moves a little farther away."],
+  ] : locale === "es" ? [
+    ["Afrontarlo y entender el problema real", "Elegir la acción y el diálogo", "No encuentras una respuesta perfecta, pero el problema se vuelve manejable. La acción trae presión y también espacio."],
+    ["Observar un tiempo antes de decidir", "Reservar tiempo para juzgar", "Todavía no empujas los acontecimientos. La espera aclara detalles mientras algunas oportunidades cambian de forma."],
+    ["Proteger tu vida actual y rechazarlo", "Priorizar estabilidad y límites", "Conservas un orden conocido. La vida continúa, pero otro camino posible queda un poco más lejos."],
+  ] : [
+    ["主动面对，弄清真正的问题", "选择行动与沟通", "你没有立刻得到完美答案，却让事情从模糊变得可以处理。行动带来新的压力，也带来新的空间。"],
+    ["先观察一段时间再决定", "为判断保留时间", "你暂时没有推动事情向前。等待让一些细节变得清楚，也让某些机会悄悄改变了形状。"],
+    ["保护现有生活，拒绝这次变化", "优先稳定与边界", "你守住了熟悉的秩序。生活没有因此停下，只是另一条可能的道路从此离你更远了一点。"],
+  ];
   return Array.from({ length: count }, (_, index) => {
     const age = Math.min(82, startingAge + 2 + index * 3);
     const theme = themes[index % themes.length];
@@ -54,17 +82,12 @@ function fallbackPlan(body: PlanRequest, count: number, startingAge: number) {
     return {
       id: `fallback-${Date.now()}-${index}`,
       age,
-      chapter: chapterForAge(age),
+      chapter: chapterForAge(age, locale),
       title: theme[0],
       scene: theme[2],
       prompt: theme[1],
-      choices: [
-        { text: "主动面对，弄清真正的问题", intent: "选择行动与沟通", effects: { ability: 4, relations: 3, stress: 3 }, fallback: "你没有立刻得到完美答案，却让事情从模糊变得可以处理。行动带来新的压力，也带来新的空间。" },
-        { text: "先观察一段时间再决定", intent: "为判断保留时间", effects: { stress: -2, ability: 2 }, fallback: "你暂时没有推动事情向前。等待让一些细节变得清楚，也让某些机会悄悄改变了形状。" },
-        { text: "保护现有生活，拒绝这次变化", intent: "优先稳定与边界", effects: { happiness: 2, stress: -3, relations: -2 }, fallback: "你守住了熟悉的秩序。生活没有因此停下，只是另一条可能的道路从此离你更远了一点。" },
-      ],
+      choices: choiceCopy.map((choice, choiceIndex) => ({ text: choice[0], intent: choice[1], effects: choiceIndex === 0 ? { ability: 4, relations: 3, stress: 3 } : choiceIndex === 1 ? { stress: -2, ability: 2 } : { happiness: 2, stress: -3, relations: -2 }, fallback: choice[2] })),
       important,
-      videoPrompt: `Animated storybook establishing shot for ${theme[0]}, age ${age}, emotionally open-ended, no outcome revealed.`,
       origin: "fallback" as const,
     };
   });
@@ -89,6 +112,8 @@ export async function POST(request: Request) {
   const turnNumber = Number(body.turnNumber || 0);
   const existingCount = Number(body.existingFuture?.length || 0);
   const importanceSchedule = Array.from({ length: count }, (_, index) => ((turnNumber + existingCount + index + 1) % 3) === 0);
+  const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
+  const languageRule = locale === "en" ? "Write all player-facing fields in natural English." : locale === "es" ? "Escribe todos los campos visibles para el jugador en español natural." : "所有面向玩家的字段使用简体中文。";
   const input = `角色：你是 AI 人生游戏《这一生》的隐藏导演。
 
 目标：为同一个角色生成接下来 ${count} 个不会向玩家公开的连续人生事件。玩家只能选择如何应对，不能选择下一件事发生什么。
@@ -103,9 +128,9 @@ export async function POST(request: Request) {
 - 每个事件必须是 AI 根据角色条件创造的具体生活情境，不是抽象问题，也不让玩家决定事件是否发生。
 - 三个选项只能决定角色如何回应，且都要有现实收益与代价。
 - 已提前两步规划的事件必须保持因果开放：可以锁定核心主题、地点与来临方式，但不能假定玩家尚未作出的选择结果。
-- importanceSchedule 为 true 的事件是大事件。video_prompt 只描述大事件到来的开场镜头，不剧透玩家选择和结局，可提前制作。
+- importanceSchedule 为 true 的事件是大事件，画面应突出其情绪与环境变化。
 - 普通事件也要具体、有生活质感；避免连续出现相同的工作、疾病、搬家或关系主题。
-- 使用简体中文。prompt 80 至 150 字，fallback 70 至 130 字，标题不超过 10 个汉字。
+- ${languageRule} Keep prompts and outcomes concise but emotionally specific.
 - 避免文化刻板印象、极端灾难堆砌和医疗法律财务建议。`;
 
   const eventSchema = {
@@ -132,9 +157,8 @@ export async function POST(request: Request) {
           required: ["text", "intent", "fallback", "effects"],
         },
       },
-      video_prompt: { type: "string" },
     },
-    required: ["age", "chapter", "title", "scene", "prompt", "choices", "video_prompt"],
+    required: ["age", "chapter", "title", "scene", "prompt", "choices"],
   };
 
   const controller = new AbortController();
@@ -179,13 +203,12 @@ export async function POST(request: Request) {
       return {
         id: `ai-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
         age,
-        chapter: String(event.chapter || chapterForAge(age)),
+        chapter: String(event.chapter || chapterForAge(age, locale)),
         title: String(event.title || "人生的新一幕"),
         scene: scenes.includes(event.scene as typeof scenes[number]) ? event.scene : "crossroads",
         prompt: String(event.prompt || "生活带来了一件无法回避的新事情。"),
         choices,
         important: importanceSchedule[index],
-        videoPrompt: String(event.video_prompt || event.prompt || "An open-ended life turning point arrives."),
         origin: "ai" as const,
       };
     });

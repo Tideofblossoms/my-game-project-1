@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 type TurnRequest = {
+  locale?: "zh" | "en" | "es";
   country?: string;
   profile?: { name?: string; place?: string; family?: string; trait?: string; birthYear?: number };
   stats?: Record<string, number>;
@@ -16,9 +17,10 @@ function safeEffects(effects: Record<string, number> | undefined) {
 }
 
 function localTurn(body: TurnRequest) {
+  const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
   return {
-    title: body.event?.title || "人生的转折",
-    narrative: body.choice?.fallback || "这个决定没有立刻改变一切，却悄悄改变了你此后看待生活的方式。",
+    title: body.event?.title || (locale === "en" ? "A turn in life" : locale === "es" ? "Un giro en la vida" : "人生的转折"),
+    narrative: body.choice?.fallback || (locale === "en" ? "The decision does not change everything at once, but it quietly changes how you will see life from here." : locale === "es" ? "La decisión no lo cambia todo de inmediato, pero transforma silenciosamente tu forma de mirar la vida." : "这个决定没有立刻改变一切，却悄悄改变了你此后看待生活的方式。"),
     effects: safeEffects(body.choice?.effects),
     illustration_prompt: "",
     live: false,
@@ -55,6 +57,8 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 28000);
   try {
     const recentHistory = (body.history || []).slice(-6).map((item) => ({ age: item.age, event: item.title, choice: item.choice }));
+    const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
+    const languageRule = locale === "en" ? "Write the title and narrative in natural English." : locale === "es" ? "Escribe el título y la narración en español natural." : "标题和叙事使用简体中文。";
     const input = `你是现实主义人生模拟游戏《这一生》的“人生导演”。你的任务不是奖励玩家，而是根据角色条件推演一个可信、克制、有情感余韵的结果。
 
 角色：${JSON.stringify({ country: body.country, profile: body.profile, stats: body.stats, recentHistory })}
@@ -63,7 +67,7 @@ export async function POST(request: Request) {
 基础数值影响建议：${JSON.stringify(body.choice.effects)}
 
 规则：
-1. 使用简体中文，叙事为120至220字，具体而不说教。
+1. ${languageRule} Be specific, emotionally grounded, and concise without preaching.
 2. 同时呈现获得与代价，不把任何道路写成唯一正确答案。
 3. 尊重国家、地区、家庭和经济条件，避免文化刻板印象。
 4. 数值变化必须在-18至18之间；普通事件应更温和。
