@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
+import { englishChapterForAge, englishLifeScenarios, lifeScenes as scenes } from "../../english-life-content";
 
 const statNames = ["health", "happiness", "ability", "money", "relations", "stress"] as const;
-const scenes = ["childhood", "school", "departure", "station", "city", "home", "crossroads", "late-life", "sunset"] as const;
 
 type PlanRequest = {
-  locale?: "zh" | "en" | "es";
+  locale?: "en";
   country?: string;
   profile?: Record<string, unknown>;
   stats?: Record<string, number>;
@@ -156,24 +156,23 @@ function hashText(value: string) {
 }
 
 function fallbackPlan(body: PlanRequest, count: number, startingAge: number) {
-  const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
   const usedTitles = new Set([...(body.history || []), ...(body.existingFuture || [])].map((item) => item.title).filter(Boolean));
   const signature = JSON.stringify({ profile: body.profile, stats: body.stats, turn: body.turnNumber });
   return Array.from({ length: count }, (_, index) => {
     const age = Math.min(82, startingAge + 1 + index * 2);
-    const ageMatches = concreteFallbackScenarios.filter((scenario) => age >= scenario.minAge && age <= scenario.maxAge && !usedTitles.has(scenario.title));
-    const candidates = ageMatches.length ? ageMatches : concreteFallbackScenarios.filter((scenario) => !usedTitles.has(scenario.title));
-    const scenario = candidates[(hashText(signature) + Number(body.turnNumber || 0) * 7 + index * 11) % Math.max(1, candidates.length)] || concreteFallbackScenarios[index % concreteFallbackScenarios.length];
+    const ageMatches = englishLifeScenarios.filter((scenario) => age >= scenario.minAge && age <= scenario.maxAge && !usedTitles.has(scenario.title));
+    const candidates = ageMatches.length ? ageMatches : englishLifeScenarios.filter((scenario) => !usedTitles.has(scenario.title));
+    const scenario = candidates[(hashText(signature) + Number(body.turnNumber || 0) * 7 + index * 11) % Math.max(1, candidates.length)] || englishLifeScenarios[index % englishLifeScenarios.length];
     usedTitles.add(scenario.title);
     const important = ((Number(body.turnNumber || 0) + Number(body.existingFuture?.length || 0) + index + 1) % 3) === 0;
     return {
       id: `fallback-${Date.now()}-${index}`,
       age,
-      chapter: chapterForAge(age, locale),
+      chapter: englishChapterForAge(age),
       title: scenario.title,
       scene: scenario.scene,
       prompt: scenario.prompt,
-      choices: scenario.choices.map((choice) => ({ text: choice[0], intent: choice[1], effects: safeEffects(choice[2]), fallback: choice[3] })),
+      choices: scenario.choices.map((choice) => ({ text: choice.text, intent: choice.intent, effects: safeEffects(choice.effects), fallback: choice.fallback })),
       important,
       origin: "fallback" as const,
     };
@@ -199,29 +198,25 @@ export async function POST(request: Request) {
   const turnNumber = Number(body.turnNumber || 0);
   const existingCount = Number(body.existingFuture?.length || 0);
   const importanceSchedule = Array.from({ length: count }, (_, index) => ((turnNumber + existingCount + index + 1) % 3) === 0);
-  const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
-  const languageRule = locale === "en" ? "Write all player-facing fields in natural English." : locale === "es" ? "Escribe todos los campos visibles para el jugador en español natural." : "所有面向玩家的字段使用简体中文。";
-  const input = `角色：你是 AI 人生游戏《这一生》的隐藏导演。
+  const input = `You are the hidden director of the AI life game One Life.
 
-目标：为同一个角色生成接下来 ${count} 个不会向玩家公开的连续人生事件。玩家只能选择如何应对，不能选择下一件事发生什么。
+Create the next ${count} connected life events for the same character. The player chooses how to respond, never whether the event happens.
 
-角色状态：${JSON.stringify({ country: body.country, profile: body.profile, stats: body.stats })}
-最近经历：${JSON.stringify(recentHistory)}
-已经锁定、不得重复或推翻的未来事件：${JSON.stringify(body.existingFuture || [])}
-新事件的重要性顺序：${JSON.stringify(importanceSchedule)}
+Character state: ${JSON.stringify({ country: body.country, profile: body.profile, stats: body.stats })}
+Recent history: ${JSON.stringify(recentHistory)}
+Already planned events that must not be repeated or contradicted: ${JSON.stringify(body.existingFuture || [])}
+Importance schedule for the new events: ${JSON.stringify(importanceSchedule)}
 
-成功标准：
-- 年龄从 ${startingAge} 岁以后严格递增，通常间隔 1 至 3 年；让人生推进得细致、事件密集，最后不得超过 82 岁。
-- 每个事件必须是 AI 根据角色的年龄、居住地、家庭情况、强弱属性和最近选择创造的具体生活情境，不是抽象问题，也不让玩家决定事件是否发生。
-- prompt 必须写清楚“谁、在什么场合、哪件事已经发生、眼前有什么期限或现实限制”。至少包含两项可感知的生活细节，例如具体金额或时间、房租账单、通勤、排班、考试、合同、家务、照护、复查、邻里或家庭安排。
-- 禁止使用“一个意外的邀请”“关系出现变化”“现实条件改变”“真正想要的生活”“弄清真正的问题”这类可套在任何人身上的空泛表述。不要讨论成功、自由、责任、稳定等抽象概念本身，要把它们落到当天必须处理的一件事上。
-- 三个选项只能决定角色如何回应，且都要有现实收益与代价。
-- 三个选项必须是能立即执行的具体行动，不能复用“主动面对 / 先观察 / 拒绝变化”这种通用三选一结构。
-- 已提前两步规划的事件必须保持因果开放：可以锁定核心主题、地点与来临方式，但不能假定玩家尚未作出的选择结果。
-- importanceSchedule 为 true 的事件是大事件，画面应突出其情绪与环境变化。
-- 当前批次的事件标题、处境、人物关系和三组选项不得彼此重复，也不得与最近经历或已锁定未来事件近义重复。普通事件也要具体、有生活质感；避免连续出现相同的工作、疾病、搬家或关系主题。
-- ${languageRule} Keep prompts and outcomes concise but emotionally specific.
-- 避免文化刻板印象、极端灾难堆砌和医疗法律财务建议。`;
+Requirements:
+- Ages must increase after ${startingAge}, usually by one to three years, and never exceed 82.
+- Every event must be a concrete everyday situation grounded in the character's age, location, family, strengths, limitations, and recent choices.
+- Each prompt must identify who is involved, where it happens, what has already happened, and a real deadline or constraint. Include at least two tangible details such as money, time, rent, commuting, shifts, exams, contracts, chores, care, appointments, neighbors, or family arrangements.
+- Avoid generic phrases and abstract debates about success, freedom, responsibility, or stability. Turn those themes into something the character must handle today.
+- Provide exactly three immediately actionable responses. Every option must have a believable benefit and cost.
+- Keep preplanned events causally open and do not assume choices the player has not made.
+- Avoid repeating topics, titles, relationships, or option structures within the batch or recent history.
+- Avoid cultural stereotypes, stacked extreme disasters, and medical, legal, or financial advice.
+- Write every player-facing field in natural English only. Keep prompts and outcomes concise but emotionally specific.`;
 
   const eventSchema = {
     type: "object",
@@ -288,21 +283,21 @@ export async function POST(request: Request) {
       previousAge = age;
       const choices = Array.isArray(event.choices) ? event.choices.slice(0, 3).map((choice) => {
         const item = choice as Record<string, unknown>;
-        return { text: String(item.text || "面对这次变化"), intent: String(item.intent || "作出回应"), fallback: String(item.fallback || "这个决定悄悄改变了接下来的人生。"), effects: safeEffects(item.effects) };
+        return { text: String(item.text || "Respond to the situation"), intent: String(item.intent || "Make a considered choice"), fallback: String(item.fallback || "The decision quietly changes what comes next."), effects: safeEffects(item.effects) };
       }) : [];
       return {
         id: `ai-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
         age,
-        chapter: String(event.chapter || chapterForAge(age, locale)),
-        title: String(event.title || "人生的新一幕"),
+        chapter: String(event.chapter || englishChapterForAge(age)),
+        title: String(event.title || "A new turn in life"),
         scene: scenes.includes(event.scene as typeof scenes[number]) ? event.scene : "crossroads",
-        prompt: String(event.prompt || "生活带来了一件无法回避的新事情。"),
+        prompt: String(event.prompt || "Life brings a concrete situation that cannot be ignored."),
         choices,
         important: importanceSchedule[index],
         origin: "ai" as const,
       };
     });
-    if (events.length !== count || events.some((event) => event.choices.length !== 3)) throw new Error("事件计划不完整");
+    if (events.length !== count || events.some((event) => event.choices.length !== 3)) throw new Error("The event plan is incomplete");
     return NextResponse.json({ events, live: true });
   } catch (error) {
     console.warn("AI event planning failed", error instanceof Error ? error.message : String(error));

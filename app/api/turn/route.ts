@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 type TurnRequest = {
-  locale?: "zh" | "en" | "es";
+  locale?: "en";
   country?: string;
   profile?: { name?: string; place?: string; family?: string; trait?: string; birthYear?: number };
   stats?: Record<string, number>;
@@ -17,10 +17,9 @@ function safeEffects(effects: Record<string, number> | undefined) {
 }
 
 function localTurn(body: TurnRequest) {
-  const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
   return {
-    title: body.event?.title || (locale === "en" ? "A turn in life" : locale === "es" ? "Un giro en la vida" : "人生的转折"),
-    narrative: body.choice?.fallback || (locale === "en" ? "The decision does not change everything at once, but it quietly changes how you will see life from here." : locale === "es" ? "La decisión no lo cambia todo de inmediato, pero transforma silenciosamente tu forma de mirar la vida." : "这个决定没有立刻改变一切，却悄悄改变了你此后看待生活的方式。"),
+    title: body.event?.title || "A turn in life",
+    narrative: body.choice?.fallback || "The decision does not change everything at once, but it quietly changes how you will see life from here.",
     effects: safeEffects(body.choice?.effects),
     illustration_prompt: "",
     live: false,
@@ -43,11 +42,11 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "请求格式无效" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request format" }, { status: 400 });
   }
 
   if (!body.event?.prompt || !body.choice?.text) {
-    return NextResponse.json({ error: "缺少人生事件或选择" }, { status: 400 });
+    return NextResponse.json({ error: "A life event and choice are required" }, { status: 400 });
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -57,22 +56,20 @@ export async function POST(request: Request) {
   const timeout = setTimeout(() => controller.abort(), 28000);
   try {
     const recentHistory = (body.history || []).slice(-6).map((item) => ({ age: item.age, event: item.title, choice: item.choice }));
-    const locale = body.locale === "en" || body.locale === "es" ? body.locale : "zh";
-    const languageRule = locale === "en" ? "Write the title and narrative in natural English." : locale === "es" ? "Escribe el título y la narración en español natural." : "标题和叙事使用简体中文。";
-    const input = `你是现实主义人生模拟游戏《这一生》的“人生导演”。你的任务不是奖励玩家，而是根据角色条件推演一个可信、克制、有情感余韵的结果。
+    const input = `You are the life director of One Life, a grounded life simulation game. Do not reward the player automatically. Infer a believable, restrained, emotionally resonant outcome from the character's circumstances.
 
-角色：${JSON.stringify({ country: body.country, profile: body.profile, stats: body.stats, recentHistory })}
-当前事件：${JSON.stringify(body.event)}
-玩家选择：${JSON.stringify({ text: body.choice.text, intent: body.choice.intent })}
-基础数值影响建议：${JSON.stringify(body.choice.effects)}
+Character: ${JSON.stringify({ country: body.country, profile: body.profile, stats: body.stats, recentHistory })}
+Current event: ${JSON.stringify(body.event)}
+Player choice: ${JSON.stringify({ text: body.choice.text, intent: body.choice.intent })}
+Suggested stat effects: ${JSON.stringify(body.choice.effects)}
 
-规则：
-1. ${languageRule} Be specific, emotionally grounded, and concise without preaching.
-2. 同时呈现获得与代价，不把任何道路写成唯一正确答案。
-3. 尊重国家、地区、家庭和经济条件，避免文化刻板印象。
-4. 数值变化必须在-18至18之间；普通事件应更温和。
-5. 不提供医疗、法律或财务建议；死亡、疾病和创伤以克制方式描写。
-6. 标题不超过10个汉字。插图提示词描述单一电影感场景，不包含画面文字。`;
+Rules:
+1. Write the title, narrative, and illustration prompt in natural English only. Be specific and concise without preaching.
+2. Show both the benefit and the cost. Never present one path as the only correct answer.
+3. Respect the character's country, family, and economic circumstances without cultural stereotypes.
+4. Keep each stat change between -18 and 18; ordinary events should be gentler.
+5. Do not provide medical, legal, or financial advice. Treat death, illness, and trauma with restraint.
+6. Keep the title short. The illustration prompt must describe one cinematic scene with no typography, captions, logos, signs, letters, or written words.`;
 
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",

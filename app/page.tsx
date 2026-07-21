@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { englishChapterForAge, englishLifeScenarios } from "./english-life-content";
 
 type Country = "cn" | "us" | "jp";
 type StatKey = "health" | "happiness" | "ability" | "money" | "relations" | "stress";
@@ -138,15 +139,15 @@ const statCopy: Record<Language, Record<StatKey, { label: string; description: s
 };
 
 const countries: Record<Country, { name: string; subtitle: string; glyph: string; places: string[] }> = {
-  cn: { name: "中国", subtitle: "家庭、流动与选择", glyph: "中", places: ["成都近郊", "苏州老城区", "西安城南", "广西的一座小城"] },
-  us: { name: "美国", subtitle: "独立、机会与代价", glyph: "US", places: ["俄勒冈州小镇", "芝加哥南郊", "亚利桑那州凤凰城", "缅因州海边"] },
-  jp: { name: "日本", subtitle: "秩序、归属与自我", glyph: "日", places: ["大阪郊区", "札幌市内", "福冈近郊", "长野县小镇"] },
+  cn: { name: "China", subtitle: "Family, movement, and choice", glyph: "CN", places: ["the outskirts of Chengdu", "Suzhou's old town", "southern Xi'an", "a small city in Guangxi"] },
+  us: { name: "United States", subtitle: "Independence, opportunity, and cost", glyph: "US", places: ["a small Oregon town", "the south side of Chicago", "Phoenix, Arizona", "the coast of Maine"] },
+  jp: { name: "Japan", subtitle: "Order, belonging, and self", glyph: "JP", places: ["the outskirts of Osaka", "central Sapporo", "the edge of Fukuoka", "a small town in Nagano"] },
 };
 
 const names: Record<Country, string[]> = {
-  cn: ["林知夏", "陈砚", "周遥", "沈禾"],
+  cn: ["Zhixia Lin", "Yan Chen", "Yao Zhou", "He Shen"],
   us: ["Avery Chen", "Jordan Reed", "Maya Brooks", "Noah Park"],
-  jp: ["佐藤遥", "高桥澪", "中村葵", "山本律"],
+  jp: ["Haruka Sato", "Mio Takahashi", "Aoi Nakamura", "Ritsu Yamamoto"],
 };
 
 const sharedEvents: LifeEvent[] = [
@@ -446,7 +447,7 @@ function startingPointCost(stats: Stats) {
   return positiveStatKeys.reduce((total, key) => total + stats[key], 0) + (100 - stats.stress);
 }
 
-function describeStartingProfile(stats: Stats, language: Language = "zh") {
+function describeStartingProfile(stats: Stats, language: Language = "en") {
   const ranked = [...positiveStatKeys].sort((a, b) => stats[b] - stats[a]);
   const strongest = ranked[0];
   const weakest = ranked[ranked.length - 1];
@@ -504,26 +505,26 @@ function makeProfile(country: Country, playerName: string, startingStats: Stats,
   const generatedName = playerName.trim() || names[country][seed % names[country].length];
   const place = countryInfo.places[(seed >> 3) % countryInfo.places.length];
   const family = startingStats.money >= 65 && startingStats.relations >= 60
-    ? "家境稳定，照料与期待同样充足"
+    ? "A stable household with abundant care and expectations"
     : startingStats.money < 40 && startingStats.relations >= 60
-      ? "生活并不宽裕，但家人彼此照应"
+      ? "A tight budget, but family members look after one another"
       : startingStats.money >= 60 && startingStats.relations < 45
-        ? "物质条件不错，家人却不善于表达感情"
+        ? "Materially comfortable, though affection is rarely expressed"
         : startingStats.money < 40 && startingStats.relations < 45
-          ? "资源有限，很多决定需要独自承担"
-          : ["经济普通，家人关系亲密", "家中重视教育，也重视稳定", "由一位家长和祖辈共同照顾"][(seed >> 5) % 3];
+          ? "Limited resources, with many decisions carried alone"
+          : ["An ordinary income and close family ties", "A household that values education and stability", "Raised by one parent with help from grandparents"][(seed >> 5) % 3];
   const dominant = [...positiveStatKeys].sort((a, b) => startingStats[b] - startingStats[a])[0];
   const traitCore: Record<StatKey, string> = {
-    health: "精力充沛，习惯先行动再调整",
-    happiness: "情绪明亮，跌倒后通常愿意再试一次",
-    ability: "早熟而好奇，喜欢弄清事情背后的原因",
-    money: "对资源与秩序敏感，做决定时很少忽视现实代价",
-    relations: "容易察觉他人的情绪，也愿意建立长期联系",
-    stress: "对环境变化十分敏锐",
+    health: "Energetic, usually acting first and adjusting later",
+    happiness: "Emotionally bright and usually willing to try again",
+    ability: "Curious and quick to investigate how things work",
+    money: "Attentive to resources, order, and practical costs",
+    relations: "Sensitive to other people's emotions and drawn to lasting bonds",
+    stress: "Highly alert to changes in the environment",
   };
-  const stressTone = startingStats.stress >= 60 ? "，但经常提前为最坏结果担心" : startingStats.stress <= 35 ? "，面对陌生处境不容易慌乱" : "，谨慎与冒险之间大致平衡";
+  const stressTone = startingStats.stress >= 60 ? ", but often worried about the worst outcome in advance" : startingStats.stress <= 35 ? ", and rarely panicked by unfamiliar situations" : ", balancing caution with a willingness to take risks";
   const trait = `${traitCore[dominant]}${stressTone}`;
-  return { name: generatedName, place, family, trait, personaId, persona: personas[personaId].name, birthYear: 2004 };
+  return { name: generatedName, place, family, trait, personaId, persona: personaCopy.en[personaId].name, birthYear: 2004 };
 }
 
 const scenePalettes: Record<string, [string, string, string, string]> = {
@@ -769,11 +770,7 @@ async function createLocalSceneImage(event: LifeEvent, profile: ReturnType<typeo
 }
 
 export default function Home() {
-  const [language, setLanguage] = useState<Language>(() => {
-    if (typeof window === "undefined") return "zh";
-    const saved = window.localStorage.getItem("one-life-language");
-    return saved === "en" || saved === "es" ? saved : "zh";
-  });
+  const language: Language = "en";
   const [screen, setScreen] = useState<Screen>("splash");
   const [country, setCountry] = useState<Country>("cn");
   const [personaId, setPersonaId] = useState<PersonaId>("dreamer");
@@ -800,7 +797,14 @@ export default function Home() {
   const [cloudSave, setCloudSave] = useState<SavePayload | null>(null);
   const [saveState, setSaveState] = useState<"loading" | "saved" | "saving" | "offline" | "error">("loading");
 
-  const fallbackEvents = useMemo(() => [...sharedEvents, ...extraLifeEvents, countryEvent[country]].sort((a, b) => a.age - b.age), [country]);
+  const fallbackEvents = useMemo<LifeEvent[]>(() => englishLifeScenarios.map((scenario) => ({
+    age: Math.round((scenario.minAge + scenario.maxAge) / 2),
+    chapter: englishChapterForAge(Math.round((scenario.minAge + scenario.maxAge) / 2)),
+    title: scenario.title,
+    scene: scenario.scene,
+    prompt: scenario.prompt,
+    choices: scenario.choices,
+  })).sort((a, b) => a.age - b.age), []);
   const currentEvent: LifeEvent = plannedEvents[0] || fallbackEvents[Math.min(eventIndex, fallbackEvents.length - 1)];
   const startingPointsRemaining = STARTING_POINT_BUDGET - startingPointCost(startingStats);
   const startingPortrait = useMemo(() => describeStartingProfile(startingStats, language), [startingStats, language]);
@@ -808,28 +812,12 @@ export default function Home() {
   const displayedStats = useMemo(() => Object.fromEntries((Object.keys(statMeta) as StatKey[]).map((key) => [key, { ...statMeta[key], ...statCopy[language][key] }])) as typeof statMeta, [language]);
   const displayedPersona = personaCopy[language];
   const displayedCountry = countryCopy[language];
-  function changeLanguage(nextLanguage: Language) {
-    if (nextLanguage === language) return;
-    setLanguage(nextLanguage);
-    if (screen === "game") {
-      if (result) languageChangedDuringResultRef.current = true;
-      else {
-        setPlannedEvents([]);
-        setDirectorLoading(true);
-        void refillEventQueue([], profile, stats, history, turnNumber, country, nextLanguage);
-      }
-    }
-  }
-  const languageSwitcher = (
-    <div className="language-switcher" role="group" aria-label="Language / Idioma / 语言">
-      {(Object.keys(languageNames) as Language[]).map((key) => <button key={key} type="button" className={language === key ? "active" : ""} onClick={() => changeLanguage(key)} aria-pressed={language === key}>{languageNames[key]}</button>)}
-    </div>
-  );
+  const languageSwitcher = null;
 
   useEffect(() => {
-    window.localStorage.setItem("one-life-language", language);
-    document.documentElement.lang = language === "zh" ? "zh-CN" : language;
-  }, [language]);
+    window.localStorage.removeItem("one-life-language");
+    document.documentElement.lang = "en";
+  }, []);
 
   useEffect(() => {
     async function loadAccountAndSave() {
@@ -839,8 +827,9 @@ export default function Home() {
         if (capabilitiesResponse.ok) setMediaCapabilities(await capabilitiesResponse.json());
         if (saveResponse.ok) {
           const data = await saveResponse.json();
-          setCloudSave(data.save || null);
-          setSaveState(data.save ? "saved" : "offline");
+          const englishSave = data.save?.language === "en" ? data.save : null;
+          setCloudSave(englishSave);
+          setSaveState(englishSave ? "saved" : "offline");
         } else {
           setSaveState("offline");
         }
@@ -926,7 +915,6 @@ export default function Home() {
         ? savedEvents.findIndex((event) => event.age > lastCompletedAge)
         : cloudSave.eventIndex;
     setCountry(cloudSave.country);
-    setLanguage(cloudSave.language || "zh");
     setPersonaId(cloudSave.personaId);
     setNameInput(cloudSave.nameInput);
     setStartingStats(cloudSave.startingStats);
@@ -1014,15 +1002,15 @@ export default function Home() {
         if (!response.ok || !data.image) throw new Error(data.error || "AI 画面生成失败");
         if (requestId !== artRequestRef.current) return;
         setArtUrl(data.image);
-        setMediaNotice(language === "en" ? "This scene was painted for this exact life moment by GPT Image." : language === "es" ? "GPT Image pintó esta escena para este momento exacto." : "这张专属画面由 GPT Image 根据当前事件生成。");
+        setMediaNotice("This scene was painted for this exact life moment by GPT Image.");
       } else {
-        setMediaNotice(language === "en" ? "A new animated scene was composed from this exact choice and outcome." : language === "es" ? "Se compuso una nueva escena animada para esta elección y su resultado." : "已根据这次选择与结果重新构图，并生成新的动态场景。");
+        setMediaNotice("A new animated scene was composed from this exact choice and outcome.");
       }
       setCgPlaying(true);
     } catch (error) {
       if (requestId !== artRequestRef.current) return;
       setCgPlaying(true);
-      setMediaNotice(language === "zh" ? `${error instanceof Error ? error.message : "AI 画面暂不可用"}；已自动使用即时插画，不会打断游玩。` : language === "en" ? "AI painting took too long, so the instant illustrated scene is being used without interrupting play." : "La pintura de IA tardó demasiado; usamos la escena ilustrada instantánea sin interrumpir la partida.");
+      setMediaNotice("AI painting took too long, so the instant illustrated scene is being used without interrupting play.");
     } finally {
       if (requestId === artRequestRef.current) setArtLoading(false);
     }
@@ -1041,7 +1029,7 @@ export default function Home() {
       const delta = Math.max(-18, Math.min(18, Number(result.effects[key] || 0)));
       nextStats[key] = clamp(nextStats[key] + delta);
     });
-    const nextHistory = [...history, { age: currentEvent.age, title: result.title, choice: pendingChoice || "做出了选择", narrative: result.narrative }];
+    const nextHistory = [...history, { age: currentEvent.age, title: result.title, choice: pendingChoice || "Made a choice", narrative: result.narrative }];
     const ended = currentEvent.age >= 82 || nextHistory.length >= 40;
     const nextScreen: Screen = ended ? "end" : "game";
     const nextIndex = eventIndex + 1;
@@ -1085,7 +1073,7 @@ export default function Home() {
       <><main className="splash-shell">
         {languageSwitcher}
         <div className="splash-cloud cloud-one" /><div className="splash-cloud cloud-two" />
-        <nav className="playful-nav"><div className="playful-logo"><span>一</span><b>{copy.brand}</b></div><div className="account-pill"><span className="account-dot" />{account?.displayName || copy.accountLoading}</div></nav>
+        <nav className="playful-nav"><div className="playful-logo"><span>1</span><b>{copy.brand}</b></div><div className="account-pill"><span className="account-dot" />{account?.displayName || copy.accountLoading}</div></nav>
         <section className="splash-hero">
           <p className="sticker">{copy.heroKicker}</p>
           <h1>{copy.heroTitle}<br /><em>{copy.heroAccent}</em></h1>
@@ -1149,15 +1137,15 @@ export default function Home() {
   if (screen === "end") {
     const years = history.at(-1)?.age || 82;
     const brightest = [...history].sort((a, b) => b.narrative.length - a.narrative.length)[0];
-    const epitaph = language === "en" ? `${profile.name} feared many things that had not yet happened, yet met real life with more courage than expected. This life did not follow the plan, but it left a pattern that belonged to no one else.` : language === "es" ? `${profile.name} temió muchas cosas que aún no habían ocurrido, pero afrontó la vida real con más valor del que imaginaba. Esta vida no siguió el plan, pero dejó una huella irrepetible.` : `${profile.name}曾经害怕许多尚未发生的事，也在真正到来时，比自己想象得更勇敢。人生没有成为计划中的样子，却留下了只属于自己的纹路。`;
+    const epitaph = `${profile.name} feared many things that had not yet happened, yet met real life with more courage than expected. This life did not follow the plan, but it left a pattern that belonged to no one else.`;
     return <><main className="end-shell">{languageSwitcher}<div className="end-card"><p className="sticker">{copy.remembered}</p><h1>{profile.name}</h1><p className="lifespan">{profile.birthYear} — {profile.birthYear + years}</p><div className="epitaph">“{epitaph}”</div><div className="life-summary"><div><small>{copy.lived}</small><strong>{years} {copy.years}</strong></div><div><small>{copy.choicesMade}</small><strong>{history.length} {copy.times}</strong></div><div><small>{copy.finalMood}</small><strong>{stats.happiness >= 65 ? copy.peaceful : stats.happiness >= 45 ? copy.complex : copy.lingering}</strong></div></div>{brightest && <p className="remembered"><span>{copy.clearest}</span>{brightest.age} {copy.ageUnit} · {brightest.title}. {brightest.narrative}</p>}<div className="mini-timeline">{history.map((item) => <div key={`${item.age}-${item.title}`}><b>{item.age}</b><span>{item.title}</span></div>)}</div><button className="big-play-button" onClick={restart}><span>{copy.liveAgain}</span><b>↻</b></button></div></main></>;
   }
 
   return (
     <><main className={`game-shell scene-${currentEvent.scene}`}>{languageSwitcher}
-      <header className="game-header"><button className="wordmark" onClick={() => setScreen("splash")}><span className="brand-mark">一</span><b>{copy.brand}</b></button><div className="life-progress"><span style={{ width: `${Math.max(4, (currentEvent.age / 82) * 100)}%` }} /></div><div className="director-chip" data-loading={directorLoading}>{directorLoading ? copy.directing : plannedEvents.length >= 3 ? copy.planned : copy.liveDirector}</div><div className="save-chip" data-state={saveState}>{saveState === "saving" ? copy.saving : saveState === "saved" ? copy.saved : account?.localPreview ? copy.localPlay : copy.noSave}</div><div className="age-stamp"><small>{currentEvent.chapter}</small><strong>{currentEvent.age}<i>{copy.ageUnit}</i></strong></div></header>
+      <header className="game-header"><button className="wordmark" onClick={() => setScreen("splash")}><span className="brand-mark">1</span><b>{copy.brand}</b></button><div className="life-progress"><span style={{ width: `${Math.max(4, (currentEvent.age / 82) * 100)}%` }} /></div><div className="director-chip" data-loading={directorLoading}>{directorLoading ? copy.directing : plannedEvents.length >= 3 ? copy.planned : copy.liveDirector}</div><div className="save-chip" data-state={saveState}>{saveState === "saving" ? copy.saving : saveState === "saved" ? copy.saved : account?.localPreview ? copy.localPlay : copy.noSave}</div><div className="age-stamp"><small>{currentEvent.chapter}</small><strong>{currentEvent.age}<i>{copy.ageUnit}</i></strong></div></header>
       <section className="game-layout">
-        <aside className="identity-panel"><div className="avatar-bubble">{personas[profile.personaId].emoji}</div><p className="panel-kicker">{copy.yourLife}</p><h2>{profile.name}</h2><p>{profile.birthYear} · {copy.bornIn} {profile.place}</p><div className="profile-facts"><span>{displayedPersona[profile.personaId].name}</span>{language === "zh" && <span>{profile.family}</span>}</div><div className="stats">{(Object.keys(displayedStats) as StatKey[]).map((key) => <div className="stat" key={key}><div><span>{displayedStats[key].icon} {displayedStats[key].label}</span><b>{stats[key]}</b></div><i><em style={{ width: `${stats[key]}%` }} /></i></div>)}</div><div className="past"><span>{copy.walked}</span><strong>{history.length} {copy.turns}</strong></div></aside>
+        <aside className="identity-panel"><div className="avatar-bubble">{personas[profile.personaId].emoji}</div><p className="panel-kicker">{copy.yourLife}</p><h2>{profile.name}</h2><p>{profile.birthYear} · {copy.bornIn} {profile.place}</p><div className="profile-facts"><span>{displayedPersona[profile.personaId].name}</span><span>{profile.family}</span></div><div className="stats">{(Object.keys(displayedStats) as StatKey[]).map((key) => <div className="stat" key={key}><div><span>{displayedStats[key].icon} {displayedStats[key].label}</span><b>{stats[key]}</b></div><i><em style={{ width: `${stats[key]}%` }} /></i></div>)}</div><div className="past"><span>{copy.walked}</span><strong>{history.length} {copy.turns}</strong></div></aside>
         <section className="story-panel">
           <div className={`memory-canvas ${artUrl ? "has-art" : ""} ${cgPlaying ? "cg-playing" : ""}`}>
             {artUrl ? <img src={artUrl} alt={`${profile.name}, ${currentEvent.age} ${copy.ageUnit}`} /> : <div className="scene-placeholder"><div className="scene-stars">✦　·　✦</div><div className="sun" /><div className="horizon" /><div className="paper-house" /><div className="paper-trees" /><p>{currentEvent.chapter}</p></div>}

@@ -12,7 +12,7 @@ async function saveIdentity() {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") || "";
   const localPreview = host.startsWith("localhost") || host.startsWith("127.0.0.1");
-  return localPreview ? { email: LOCAL_PLAYER_EMAIL, displayName: "本地试玩玩家" } : null;
+  return localPreview ? { email: LOCAL_PLAYER_EMAIL, displayName: "Local player" } : null;
 }
 
 async function ensureSaveTable() {
@@ -26,8 +26,8 @@ async function ensureSaveTable() {
 
 export async function GET() {
   const identity = await saveIdentity();
-  if (!identity) return Response.json({ error: "请先登录后读取云存档" }, { status: 401 });
-  if (!env.DB) return Response.json({ error: "存档数据库暂不可用" }, { status: 503 });
+  if (!identity) return Response.json({ error: "Sign in to load a cloud save" }, { status: 401 });
+  if (!env.DB) return Response.json({ error: "The save database is temporarily unavailable" }, { status: 503 });
 
   await ensureSaveTable();
   const row = await env.DB.prepare("SELECT save_data, updated_at FROM life_saves WHERE user_email = ?")
@@ -44,13 +44,13 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   const identity = await saveIdentity();
-  if (!identity) return Response.json({ error: "请先登录后保存进度" }, { status: 401 });
-  if (!env.DB) return Response.json({ error: "存档数据库暂不可用" }, { status: 503 });
+  if (!identity) return Response.json({ error: "Sign in to save your progress" }, { status: 401 });
+  if (!env.DB) return Response.json({ error: "The save database is temporarily unavailable" }, { status: 503 });
 
   const save = await request.json();
   const serialized = JSON.stringify(save);
   if (!save || save.version !== 1 || serialized.length > MAX_SAVE_BYTES) {
-    return Response.json({ error: "存档格式不正确或体积过大" }, { status: 400 });
+    return Response.json({ error: "The save is invalid or too large" }, { status: 400 });
   }
 
   await ensureSaveTable();

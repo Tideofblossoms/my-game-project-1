@@ -14,6 +14,6 @@ export async function GET() {
   return Response.json({
     authenticated: false,
     localPreview,
-    displayName: localPreview ? "本地试玩玩家" : "访客",
+    displayName: localPreview ? "Local player" : "Guest",
   });
 }
