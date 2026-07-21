@@ -25,6 +25,8 @@ test("keeps the complete game English-only with result-specific illustrations", 
   ]);
 
   assert.match(page, /const language: Language = "en"/);
+  assert.match(page, /english-only-20260721/);
+  assert.match(page, /data\.save\?\.contentVersion === ENGLISH_CONTENT_VERSION/);
   assert.match(page, /const languageSwitcher = null/);
   assert.match(page, /englishLifeScenarios/);
   assert.match(page, /window\.localStorage\.removeItem\("one-life-language"\)/);

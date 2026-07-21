@@ -20,6 +20,7 @@ type MediaCapabilities = { image: boolean };
 
 type SavePayload = {
   version: 1;
+  contentVersion?: "english-only-20260721";
   screen: Screen;
   country: Country;
   personaId: PersonaId;
@@ -56,6 +57,8 @@ type PlannedLifeEvent = LifeEvent & {
   id: string;
   origin: "ai" | "fallback";
 };
+
+const ENGLISH_CONTENT_VERSION = "english-only-20260721" as const;
 
 const legacyAbstractEventTitles = new Set([
   "一个意外的邀请", "关系里的新距离", "必须重新安排的生活",
@@ -827,7 +830,9 @@ export default function Home() {
         if (capabilitiesResponse.ok) setMediaCapabilities(await capabilitiesResponse.json());
         if (saveResponse.ok) {
           const data = await saveResponse.json();
-          const englishSave = data.save?.language === "en" ? data.save : null;
+          const englishSave = data.save?.language === "en" && data.save?.contentVersion === ENGLISH_CONTENT_VERSION
+            ? data.save
+            : null;
           setCloudSave(englishSave);
           setSaveState(englishSave ? "saved" : "offline");
         } else {
@@ -895,7 +900,7 @@ export default function Home() {
   async function persistSave(save: SavePayload) {
     setSaveState("saving");
     try {
-      const localizedSave = { ...save, language };
+      const localizedSave = { ...save, language, contentVersion: ENGLISH_CONTENT_VERSION };
       const response = await fetch("/api/save", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(localizedSave) });
       if (!response.ok) throw new Error("save failed");
       setCloudSave(localizedSave);
@@ -906,7 +911,7 @@ export default function Home() {
   }
 
   function restoreSave() {
-    if (!cloudSave || cloudSave.version !== 1) return;
+    if (!cloudSave || cloudSave.version !== 1 || cloudSave.contentVersion !== ENGLISH_CONTENT_VERSION) return;
     const savedEvents = [...sharedEvents, ...extraLifeEvents, countryEvent[cloudSave.country]].sort((a, b) => a.age - b.age);
     const lastCompletedAge = cloudSave.history.at(-1)?.age;
     const matchedIndex = cloudSave.eventAge
