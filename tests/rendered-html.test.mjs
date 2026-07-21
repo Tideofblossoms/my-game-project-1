@@ -40,5 +40,9 @@ test("includes three languages and result-specific animated illustrations withou
   assert.match(illustrate, /42000/);
   assert.doesNotMatch(plan, /video_prompt|videoPrompt/);
   assert.doesNotMatch(capabilities, /video/);
+  assert.match(plan, /弄丢的班级借阅书/);
+  assert.match(plan, /prompt 必须写清楚/);
+  assert.doesNotMatch(plan, /\["一个意外的邀请"/);
+  assert.match(page, /legacyAbstractEventTitles/);
   await assert.rejects(readFile(new URL("../app/api/video/route.ts", import.meta.url), "utf8"));
 });

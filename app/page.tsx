@@ -56,6 +56,12 @@ type PlannedLifeEvent = LifeEvent & {
   origin: "ai" | "fallback";
 };
 
+const legacyAbstractEventTitles = new Set([
+  "一个意外的邀请", "关系里的新距离", "必须重新安排的生活",
+  "An unexpected invitation", "A new distance", "Life rearranged",
+  "Una invitación inesperada", "Una nueva distancia", "Reordenar la vida",
+]);
+
 type HistoryItem = {
   age: number;
   title: string;
@@ -883,12 +889,13 @@ export default function Home() {
     activeCountry: Country = country,
     activeLanguage: Language = language,
   ) {
-    const needed = Math.max(0, 3 - existingFuture.length);
-    if (!needed) return existingFuture;
-    if (!existingFuture.length) setDirectorLoading(true);
+    const usableFuture = existingFuture.filter((event) => !legacyAbstractEventTitles.has(event.title));
+    const needed = Math.max(0, 3 - usableFuture.length);
+    if (!needed) return usableFuture;
+    if (!usableFuture.length) setDirectorLoading(true);
     try {
-      const additions = await requestEventPlan(activeProfile, activeStats, activeHistory, existingFuture, needed, activeTurn, activeCountry, activeLanguage);
-      const queue = [...existingFuture, ...additions];
+      const additions = await requestEventPlan(activeProfile, activeStats, activeHistory, usableFuture, needed, activeTurn, activeCountry, activeLanguage);
+      const queue = [...usableFuture, ...additions];
       setPlannedEvents(queue);
       return queue;
     } finally {
@@ -927,13 +934,13 @@ export default function Home() {
     setStats(cloudSave.stats);
     setEventIndex(cloudSave.screen === "end" ? savedEvents.length - 1 : Math.max(0, matchedIndex));
     setTurnNumber(cloudSave.turnNumber ?? cloudSave.history.length);
-    setPlannedEvents(cloudSave.plannedEvents || []);
+    const restoredQueue = (cloudSave.plannedEvents || []).filter((event) => !legacyAbstractEventTitles.has(event.title));
+    setPlannedEvents(restoredQueue);
     setHistory(cloudSave.history);
     setResult(null);
     setArtUrl(null);
     setScreen(cloudSave.screen === "game" || cloudSave.screen === "end" ? cloudSave.screen : "name");
     if (cloudSave.screen === "game") {
-      const restoredQueue = cloudSave.plannedEvents || [];
       void refillEventQueue(restoredQueue, cloudSave.profile, cloudSave.stats, cloudSave.history, cloudSave.turnNumber ?? cloudSave.history.length, cloudSave.country);
     }
   }
